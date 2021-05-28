@@ -1,0 +1,20 @@
+<html lang="en">
+<!--This document is not actually referenced.-->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resource Monitor</title>
+    <link href="https://raw.githubusercontent.com/microsoft/vscode-codicons/40014cd4f4415cd8aca14c50370c32346473cf6f/src/icons/graph.svg" rel="icon">
+</head>
+<body>
+    <div id="memoryGroup">
+        <h1 id="memtitle">Memory Usage</h1>
+        <canvas id="memory" width=512, height=128></canvas>
+    </div>
+    <div id="cpuGroup">
+        <h1 id="cputitle">CPU Usage</h1>
+        <canvas id="cpu" width=512, height=128></canvas>
+    </div>
+    <script src="panel.js"></script>
+</body>
+</html>
