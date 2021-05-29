@@ -6,6 +6,8 @@ const cpuCanvas = document.getElementById("cpu");
 var memory = new Map();
 var cpu = new Map();
 
+var length = 0;
+
 function timeUnits(millis) {
     millis = Math.floor(millis);
     if (millis >= 1000 * 60 * 60) {
@@ -49,7 +51,7 @@ function updateGraph(canvas, minX, maxX, ticksX, unitFuncX, minY, maxY, ticksY, 
     function canvasX(graphX) {
         return Math.min(canvas.width - marginR,
             Math.max(marginL,
-                canvas.width - marginR - (canvas.width - marginR - marginL) * ((graphX - minX) / (maxX - minX))
+                marginL + (canvas.width - marginR - marginL) * ((graphX - minX) / (maxX - minX))
             ));
     }
     function canvasY(graphY) {
@@ -64,7 +66,7 @@ function updateGraph(canvas, minX, maxX, ticksX, unitFuncX, minY, maxY, ticksY, 
 
     // Draw tick lines and labels
     context.strokeStyle = "dimgrey";
-    context.fillStyle = "black";
+    context.fillStyle = "white";
     context.beginPath();
     // X axis
     context.textAlign = "center";
@@ -87,7 +89,7 @@ function updateGraph(canvas, minX, maxX, ticksX, unitFuncX, minY, maxY, ticksY, 
     context.stroke();
 
     // Draw edges (after tick lines to be on top)
-    context.strokeStyle = "black";
+    context.strokeStyle = "white";
     context.beginPath();
     context.moveTo(marginL, marginTop);
     context.lineTo(marginL, canvas.height - marginBottom);
@@ -123,11 +125,20 @@ function updateMem() {
             minTime = key;
         }
     });
+    if (length !== 0) {
+        minTime = maxTime - length;
+        // Prune
+        memory.forEach((value, key) => {
+            if (key < minTime) {
+                memory.delete(key);
+            }
+        });
+    }
     let memticks = 4;
     // Make the tick interval be the next power of 2 (4kb, 8kb, ..., 64kb, ..., 1mb, ..., 1gb)
     let interval = 2 ** Math.ceil(Math.log2(maxMem / memticks));
     maxMem = Math.ceil(maxMem / interval) * interval;
-    updateGraph(memCanvas, minTime, maxTime, 9, timeUnits, 0, maxMem, memticks, memUnits, memory);
+    updateGraph(memCanvas, minTime, maxTime, 10, timeUnits, 0, maxMem, memticks, memUnits, memory);
 }
 
 function updateCpu() {
@@ -147,7 +158,16 @@ function updateCpu() {
             minTime = key;
         }
     });
-    updateGraph(cpuCanvas, minTime, maxTime, 9, timeUnits, 0, maxCpu, 5, cpuUnits, cpu);
+    if (length !== 0) {
+        minTime = maxTime - length;
+        // Prune
+        cpu.forEach((value, key) => {
+            if (key < minTime) {
+                cpu.delete(key);
+            }
+        });
+    }
+    updateGraph(cpuCanvas, minTime, maxTime, 10, timeUnits, 0, maxCpu, 5, cpuUnits, cpu);
 }
 
 var lastcpu = 0;
@@ -165,6 +185,11 @@ window.addEventListener("message", (e) => {
                 cpu.set(data.time, data.value - lastcpu);
             }
             lastcpu = data.value;
+            updateCpu();
+            break;
+        case "length":
+            length = data.value;
+            updateMem();
             updateCpu();
             break;
         default:

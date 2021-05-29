@@ -13,7 +13,18 @@
     "onLanguage:python"
   ],
   "main": "./out/extension.js",
-  "contributes": {},
+  "contributes": {
+    "commands": [
+      {
+        "command": "python-resource-monitor.rsmInterval",
+        "title": "Resource Monitor Polling Interval"
+      },
+      {
+          "command": "python-resource-monitor.rsmLength",
+          "title": "Resource Monitor Length"
+      }
+    ]
+  },
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
