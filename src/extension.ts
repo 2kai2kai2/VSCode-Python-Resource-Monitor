@@ -7,6 +7,61 @@ var panel: vscode.WebviewPanel;
 var pollingInterval = 100;
 var rsmLength = 10000;
 
+function launchWebview(context: vscode.ExtensionContext, pid: number) {
+    try {
+        panel.dispose();
+    } catch {}
+    panel = vscode.window.createWebviewPanel("resourceMonitor", "Resource Monitor", vscode.ViewColumn.Beside, {enableScripts: true});
+
+    let paneljs = panel.webview.asWebviewUri(vscode.Uri.file(join(context.extensionPath, 'webview', 'panel.js')));
+    panel.webview.html = `
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Resource Monitor</title>
+        <link href="https://raw.githubusercontent.com/microsoft/vscode-codicons/40014cd4f4415cd8aca14c50370c32346473cf6f/src/icons/graph.svg" rel="icon">
+    </head>
+    <body>
+        <h1 id="memtitle">Memory Usage</h1>
+        <canvas id="memory" width=512, height=128></canvas>
+        <h1 id="cputitle">CPU Usage</h1>
+        <canvas id="cpu" width=512, height=128></canvas>
+        <script src="${paneljs}"></script>
+    </body>
+    </html>
+    `;
+    panel.webview.postMessage({"type": "length", "value": rsmLength});
+    
+    startMonitor(pid);
+    console.log(`Starting resource monitor for process ID ${pid}.`);
+}
+
+class PyDebugAdapterTracker implements vscode.DebugAdapterTracker {
+    context: vscode.ExtensionContext;
+    constructor (context: vscode.ExtensionContext) {
+        this.context = context;
+    }
+
+    onDidSendMessage(message: any): void {
+        // Python ("python" "launch")
+        // On (by my testing) seq:9 of messages, we get a message that includes the process.
+        if (message.type === "event" && message.event === "process") {
+            launchWebview(this.context, message.body.systemProcessId);
+        }
+    }
+}
+
+class PyDebugAdapterTrackerFactory implements vscode.DebugAdapterTrackerFactory {
+    context: vscode.ExtensionContext;
+    constructor(context: vscode.ExtensionContext) {
+        this.context = context;
+    }
+    createDebugAdapterTracker(session: vscode.DebugSession): vscode.ProviderResult<vscode.DebugAdapterTracker> {
+        return new PyDebugAdapterTracker(this.context);
+    }
+}
+
 export function activate(context: vscode.ExtensionContext) {
     console.log('Extension Python Resource Monitor activated.');
     // Commands
@@ -99,39 +154,14 @@ export function activate(context: vscode.ExtensionContext) {
         lengthbox.show();
     }));
 
-    // Debugger
-    vscode.debug.onDidStartDebugSession((e) => {
-        try {
-            panel.dispose();
-        } catch {}
-        panel = vscode.window.createWebviewPanel("resourceMonitor", "Resource Monitor", vscode.ViewColumn.Beside, {enableScripts: true});
+    // Instead of just getting the debug start event, we now use an adapter tracker.
+    // This also makes sure that we only get python debugs
+    vscode.debug.registerDebugAdapterTrackerFactory("python", new PyDebugAdapterTrackerFactory(context));
+    // vscode.debug.onDidStartDebugSession((e) => {});
 
-        let paneljs = panel.webview.asWebviewUri(vscode.Uri.file(join(context.extensionPath, 'webview', 'panel.js')));
-        panel.webview.html = `
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Resource Monitor</title>
-            <link href="https://raw.githubusercontent.com/microsoft/vscode-codicons/40014cd4f4415cd8aca14c50370c32346473cf6f/src/icons/graph.svg" rel="icon">
-        </head>
-        <body>
-            <h1 id="memtitle">Memory Usage</h1>
-            <canvas id="memory" width=512, height=128></canvas>
-            <h1 id="cputitle">CPU Usage</h1>
-            <canvas id="cpu" width=512, height=128></canvas>
-            <script src="${paneljs}"></script>
-        </body>
-        </html>
-        `;
-        panel.webview.postMessage({"type": "length", "value": rsmLength});
-        startMonitor(0);
-        console.log("Starting resource monitor.");
-    });
     vscode.debug.onDidTerminateDebugSession(() => {
-        console.log("Stopped resource monitor.");
+        console.log("Stopping resource monitor.");
     });
-
 }
 
 function getWin(pid: number) {

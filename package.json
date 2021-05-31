@@ -10,7 +10,9 @@
     "Other"
   ],
   "activationEvents": [
-    "onLanguage:python"
+    "onDebug",
+    "onCommand:python-resource-monitor.rsmInterval",
+    "onCommand:python-resource-monitor.rsmLength"
   ],
   "main": "./out/extension.js",
   "contributes": {
