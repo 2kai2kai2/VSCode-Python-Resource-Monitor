@@ -3,6 +3,9 @@
   "displayName": "Python Resource Monitor",
   "description": "Resource monitor for Python debugging",
   "version": "0.0.1",
+  "publisher": "kaih2o",
+  "repository": "https://github.com/2kai2kai2/VSCode-Python-Resource-Monitor",
+  "extensionDependencies": ["vscode.python"],
   "engines": {
     "vscode": "^1.56.0"
   },
@@ -19,11 +22,11 @@
     "commands": [
       {
         "command": "python-resource-monitor.rsmInterval",
-        "title": "Resource Monitor Polling Interval"
+        "title": "PyRSM: Polling Interval"
       },
       {
-          "command": "python-resource-monitor.rsmLength",
-          "title": "Resource Monitor Length"
+        "command": "python-resource-monitor.rsmLength",
+        "title": "PyRSM: Length"
       }
     ]
   },
@@ -39,7 +42,6 @@
     "@types/glob": "^7.1.3",
     "@types/mocha": "^8.0.4",
     "@types/node": "^12.11.7",
-    "@types/ps-node": "^0.1.0",
     "@types/vscode": "^1.56.0",
     "@typescript-eslint/eslint-plugin": "^4.14.1",
     "@typescript-eslint/parser": "^4.14.1",
