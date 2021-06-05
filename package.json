@@ -2,9 +2,10 @@
   "name": "python-resource-monitor",
   "displayName": "Python Resource Monitor",
   "description": "Resource monitor for Python debugging",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "publisher": "kaih2o",
   "repository": "https://github.com/2kai2kai2/VSCode-Python-Resource-Monitor",
+  "icon": "images/icon.png",
   "extensionDependencies": ["vscode.python"],
   "engines": {
     "vscode": "^1.56.0"
