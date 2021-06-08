@@ -2,11 +2,13 @@
   "name": "python-resource-monitor",
   "displayName": "Python Resource Monitor",
   "description": "Resource monitor for Python debugging",
-  "version": "0.0.2",
+  "version": "0.1.0",
   "publisher": "kaih2o",
   "repository": "https://github.com/2kai2kai2/VSCode-Python-Resource-Monitor",
   "icon": "images/icon.png",
-  "extensionDependencies": ["vscode.python"],
+  "extensionDependencies": [
+    "vscode.python"
+  ],
   "engines": {
     "vscode": "^1.56.0"
   },
@@ -51,5 +53,8 @@
     "mocha": "^8.2.1",
     "typescript": "^4.1.3",
     "vscode-test": "^1.5.0"
+  },
+  "dependencies": {
+    "node-ps-data": "^1.0.4"
   }
 }

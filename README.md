@@ -18,13 +18,15 @@ Provides a resource monitor that is opened when debugging Python, including proc
 
 ## Known Issues and Future Updates
 
-- CPU time has low resolution, and only shows data when a second of cpu time has been used due to `tasklist`'s smallest resolution being one second.
 - Hopefully, this will one day work for many languages and debuggers!
-- Not tested on Linux or MacOS.
+- Not tested on MacOS.
 - I don't think it will work with the Python multiprocessing module quite yet.
 
 ### 0.0.1
 First Release! All the basics seem to work.
 
 ### 0.0.2
-- Added icon and more details.
+Added icon and more details.
+
+### 0.1.0
+Millisecond-accuracy for CPU usage. When writing the module, tested with Linux.

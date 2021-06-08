@@ -21,18 +21,20 @@ function timeUnits(millis) {
     }
 }
 
-function memUnits(kilobytes) {
-    if (kilobytes >= 1024 ** 2) {
-        return Math.ceil(kilobytes / (1024 * 102.4)) / 10 + "gb";
-    } else if (kilobytes >= 1024) {
-        return Math.ceil(kilobytes / 102.4) / 10 + "mb";
+function memUnits(bytes) {
+    if (bytes >= 1024 ** 3) {
+        return Math.ceil(bytes / ((1024 ** 2) * 102.4)) / 10 + "gb";
+    } else if (bytes >= 1024 ** 2) {
+        return Math.ceil(bytes / (1024 * 102.4)) / 10 + "mb";
+    } else if (bytes >= 1024) {
+        return Math.ceil(bytes / 102.4) / 10 + "kb";
     } else {
-        return kilobytes + "kb";
+        return bytes + "b";
     }
 }
 
 function cpuUnits(cputime) {
-    return String(cputime);
+    return Math.ceil(cputime * 100) / 100 + "%";
 }
 
 function updateGraph(canvas, minX, maxX, ticksX, unitFuncX, minY, maxY, ticksY, unitFuncY, data) {
@@ -170,7 +172,8 @@ function updateCpu() {
     updateGraph(cpuCanvas, minTime, maxTime, 10, timeUnits, 0, maxCpu, 5, cpuUnits, cpu);
 }
 
-var lastcpu = 0;
+var lastcputime = -1;
+var lastcpu = -1;
 
 window.addEventListener("message", (e) => {
     /** @type {JSON} */
@@ -181,9 +184,14 @@ window.addEventListener("message", (e) => {
             updateMem();
             break;
         case "cpudata":
-            if (lastcpu !== 0) {
-                cpu.set(data.time, data.value - lastcpu);
+            if (lastcpu >= 0) {
+                // In ms, the total amount of time since the last measurement
+                let deltaT = data.time - lastcputime;
+                // In ms, the amount of CPU time used since the last measurement
+                let deltaC = data.value - lastcpu;
+                cpu.set(data.time, 100.0 * deltaC / deltaT);
             }
+            lastcputime = data.time;
             lastcpu = data.value;
             updateCpu();
             break;
