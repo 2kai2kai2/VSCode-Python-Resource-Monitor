@@ -2,7 +2,7 @@
   "name": "python-resource-monitor",
   "displayName": "Python Resource Monitor",
   "description": "Resource monitor for Python debugging",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "publisher": "kaih2o",
   "repository": "https://github.com/2kai2kai2/VSCode-Python-Resource-Monitor",
   "icon": "images/icon.png",
@@ -13,8 +13,20 @@
     "vscode": "^1.56.0"
   },
   "categories": [
+    "Visualization",
+    "Debuggers",
     "Other"
   ],
+  "keywords": [
+      "performance",
+      "resource",
+      "monitor",
+      "task manager",
+      "python"
+  ],
+  "galleryBanner": {
+      "theme": "dark"
+  },
   "activationEvents": [
     "onDebug",
     "onCommand:python-resource-monitor.rsmInterval",

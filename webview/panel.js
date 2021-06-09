@@ -23,11 +23,11 @@ function timeUnits(millis) {
 
 function memUnits(bytes) {
     if (bytes >= 1024 ** 3) {
-        return Math.ceil(bytes / ((1024 ** 2) * 102.4)) / 10 + "gb";
+        return Math.ceil(bytes / (1024 ** 3)) + "gb";
     } else if (bytes >= 1024 ** 2) {
-        return Math.ceil(bytes / (1024 * 102.4)) / 10 + "mb";
+        return Math.ceil(bytes / (1024 ** 2)) + "mb";
     } else if (bytes >= 1024) {
-        return Math.ceil(bytes / 102.4) / 10 + "kb";
+        return Math.ceil(bytes / 1024) + "kb";
     } else {
         return bytes + "b";
     }

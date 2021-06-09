@@ -195,14 +195,14 @@ function getData(pid: number) {
                     let sessionName = items[2];
                     let sessionNum = parseInt(items[3]);
                     let memkb = parseInt(items[4].replace(",", "").replace(" K", ""));
-                    let status = items[5];
+                    /*let status = items[5];
                     let user = items[6];
                     let cpuitems = items[7].split(":");
                     let cputime = parseInt(cpuitems[0]) * 60 * 60 + parseInt(cpuitems[1]) * 60 + parseInt(cpuitems[2]);
-                    let windowname = items[8];
+                    let windowname = items[8];*/
                     // Send data to webview
                     // Make sure to catch promise rejections (when the webview has been closed but a message is still posted) with .then()
-                    panel.webview.postMessage({ "type": "memdata", "time": timemem, "value": memkb }).then(() => {}, () => {});
+                    panel.webview.postMessage({ "type": "memdata", "time": timemem, "value": memkb * 1024 }).then(() => {}, () => {});
                 }
             });
         } else {
@@ -244,7 +244,7 @@ function getWin(pid: number) {
             try {
                 // Send data to webview
                 // Make sure to catch promise rejections (when the webview has been closed but a message is still posted) with .then()
-                panel.webview.postMessage({ "type": "memdata", "time": time, "value": memkb }).then(() => {}, () => {});
+                panel.webview.postMessage({ "type": "memdata", "time": time, "value": memkb * 1024 }).then(() => {}, () => {});
                 panel.webview.postMessage({ "type": "cpudata", "time": time, "value": cputime/1000 }).then(() => {}, () => {});
             } catch {
                 console.error("Webview post failed. May be due to process interval not yet being closed.");
@@ -272,7 +272,7 @@ function getMemUnix(pid: number) {
             try {
                 // Send data to webview
                 // Make sure to catch promise rejections (when the webview has been closed but a message is still posted) with .then()
-                panel.webview.postMessage({ "type": "memdata", "time": time, "value": memkb }).then(() => {}, () => {});
+                panel.webview.postMessage({ "type": "memdata", "time": time, "value": memkb * 1024 }).then(() => {}, () => {});
                 panel.webview.postMessage({ "type": "cpudata", "time": time, "value": cputime/1000 }).then(() => {}, () => {});
             } catch {
                 console.error("Webview post failed. May be due to process interval not yet being closed.");
