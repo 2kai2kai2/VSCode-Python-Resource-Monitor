@@ -6,8 +6,14 @@ const cpuCanvas = document.getElementById("cpu");
 var memory = new Map();
 var cpu = new Map();
 
+/** Length in milliseconds to keep in logs. */
 var length = 0;
 
+/**
+ * Creates a string representation of time units.
+ * @param {number} millis Time in milliseconds.
+ * @returns String representing time and its unit with 1 decimal place.
+ */
 function timeUnits(millis) {
     millis = Math.floor(millis);
     if (millis >= 1000 * 60 * 60) {
@@ -21,6 +27,11 @@ function timeUnits(millis) {
     }
 }
 
+/**
+ * Creates a string representation of memory units.
+ * @param {number} bytes Number of bytes.
+ * @returns String representing memory and its unit with 0 decimal places.
+ */
 function memUnits(bytes) {
     if (bytes >= 1024 ** 3) {
         return Math.ceil(bytes / (1024 ** 3)) + "gb";
@@ -33,14 +44,32 @@ function memUnits(bytes) {
     }
 }
 
+/**
+ * Creates a string representation of CPU utilization.
+ * @param {number} cputime Percentage CPU utilization.
+ * @returns String representing CPU utilization percentage with 2 decimal places.
+ */
 function cpuUnits(cputime) {
     return Math.ceil(cputime * 100) / 100 + "%";
 }
 
+/**
+ * Updates a graph on a specified canvas.
+ * @param {HTMLCanvasElement} canvas The canvas to draw the graph on.
+ * @param {number} minX Minimum X-axis value. All lower values will be drawn at this value.
+ * @param {number} maxX Maximum X-axis value. All higher values will be drawn at this value.
+ * @param {number} ticksX Number of ticks to include on the X-axis, including the beginning but excluding the end.
+ * @param {function(number): string} unitFuncX The function for formatting tick marks on the X-axis.
+ * @param {number} minY Minimum Y-axis value. All lower values will be drawn at this value.
+ * @param {number} maxY Maximum Y-axis value. All higher values will be drawn at this value.
+ * @param {number} ticksY Number of ticks to include on the Y-axis, including the beginning but excluding the end.
+ * @param {function(number): string} unitFuncY The function for formatting tick marks on the Y-axis.
+ * @param {Map<number, number>} data Map of datapoints to draw on the graph, sorted by value on the X-axis.
+ */
 function updateGraph(canvas, minX, maxX, ticksX, unitFuncX, minY, maxY, ticksY, unitFuncY, data) {
     // Decide on tick marks (this may eventually be scalable/zoomable)
     // Y - memory
-    let intervalY = maxY / ticksY;
+    let intervalY = (maxY - minY) / ticksY;
 
     // X - time
     let intervalX = (maxX - minX) / ticksX;
@@ -59,7 +88,7 @@ function updateGraph(canvas, minX, maxX, ticksX, unitFuncX, minY, maxY, ticksY, 
     function canvasY(graphY) {
         return Math.min(canvas.height - marginBottom,
             Math.max(marginTop,
-                canvas.height - marginBottom - (canvas.height - marginBottom - marginTop) * (graphY / maxY)
+                canvas.height - marginBottom - (canvas.height - marginBottom - marginTop) * ((graphY - minY) / (maxY - minY))
             ));
     }
     // Draw graph background
@@ -109,6 +138,9 @@ function updateGraph(canvas, minX, maxX, ticksX, unitFuncX, minY, maxY, ticksY, 
     context.stroke();
 }
 
+/**
+ * Updates the memory graph based on the data in `memory` map.
+ */
 function updateMem() {
     // Get bounds of graph
     let maxMem = 0;
@@ -143,6 +175,9 @@ function updateMem() {
     updateGraph(memCanvas, minTime, maxTime, 10, timeUnits, 0, maxMem, memticks, memUnits, memory);
 }
 
+/**
+ * Updates the CPU graph based on the data in `cpu` map.
+ */
 function updateCpu() {
     let maxCpu = 0;
     let minTime = Number.MAX_SAFE_INTEGER;
@@ -206,7 +241,11 @@ window.addEventListener("message", (e) => {
     }
 });
 
-// Resize event
+/**
+ * Reize graphs to an appropriate size.
+ * 
+ * 4:1 width:height
+ */
 function resize() {
     memCanvas.width = document.getElementById("memoryGroup").clientWidth;
     memCanvas.height = document.getElementById("memoryGroup").clientWidth / 4;

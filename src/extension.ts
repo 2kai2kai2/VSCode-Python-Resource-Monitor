@@ -15,11 +15,16 @@ var panel: vscode.WebviewPanel;
 var pollingInterval = 100;
 var rsmLength = 10000;
 
+/**
+ * Creates and starts a new Webview resource monitor.
+ * @param context The VS Code Extension Context from which to launch the Webview.
+ * @param pid The process ID to track with the resource monitor.
+ */
 function launchWebview(context: vscode.ExtensionContext, pid: number) {
     try {
         panel.dispose();
-    } catch {}
-    panel = vscode.window.createWebviewPanel("resourceMonitor", "Resource Monitor", vscode.ViewColumn.Beside, {enableScripts: true});
+    } catch { }
+    panel = vscode.window.createWebviewPanel("resourceMonitor", "Resource Monitor", vscode.ViewColumn.Beside, { enableScripts: true });
 
     let paneljs = panel.webview.asWebviewUri(vscode.Uri.file(join(context.extensionPath, 'webview', 'panel.js')));
     panel.webview.html = `
@@ -39,15 +44,15 @@ function launchWebview(context: vscode.ExtensionContext, pid: number) {
     </body>
     </html>
     `;
-    panel.webview.postMessage({"type": "length", "value": rsmLength});
-    
+    panel.webview.postMessage({ "type": "length", "value": rsmLength });
+
     startMonitor(pid);
     console.log(`Starting resource monitor for process ID ${pid}.`);
 }
 
 class PyDebugAdapterTracker implements vscode.DebugAdapterTracker {
     context: vscode.ExtensionContext;
-    constructor (context: vscode.ExtensionContext) {
+    constructor(context: vscode.ExtensionContext) {
         this.context = context;
     }
 
@@ -129,7 +134,7 @@ export function activate(context: vscode.ExtensionContext) {
                 // If it is less than 1, we have infinite. Set to 0.
                 rsmLength = 0;
                 try {
-                    panel.webview.postMessage({"type": "length", "value": 0}).then(() => {
+                    panel.webview.postMessage({ "type": "length", "value": 0 }).then(() => {
                         // On success
                         vscode.window.showInformationMessage("Successfully set resource monitor length to unlimited.");
                     }, () => {
@@ -145,7 +150,7 @@ export function activate(context: vscode.ExtensionContext) {
                 // Set it to whatever they entered.
                 rsmLength = num;
                 try {
-                    panel.webview.postMessage({"type": "length", "value": num}).then(() => {
+                    panel.webview.postMessage({ "type": "length", "value": num }).then(() => {
                         // On success
                         vscode.window.showInformationMessage(`Successfully set resource monitor length to ${num}ms.`);
                     }, () => {
@@ -172,8 +177,11 @@ export function activate(context: vscode.ExtensionContext) {
     });
 }
 
+/**
+ * Get data for a specified process ID using node-ps-data.
+ * @param pid Process ID to check.
+ */
 function getData(pid: number) {
-    
     let cpu = ps.cpuTime(pid);
     let timecpu = Date.now();
     try {
@@ -202,24 +210,25 @@ function getData(pid: number) {
                     let windowname = items[8];*/
                     // Send data to webview
                     // Make sure to catch promise rejections (when the webview has been closed but a message is still posted) with .then()
-                    panel.webview.postMessage({ "type": "memdata", "time": timemem, "value": memkb * 1024 }).then(() => {}, () => {});
+                    panel.webview.postMessage({ "type": "memdata", "time": timemem, "value": memkb * 1024 }).then(() => { }, () => { });
                 }
             });
         } else {
             let timemem = Date.now();
             let mem = ps.memInfo(pid);
-            panel.webview.postMessage({ "type": "memdata", "time": timemem, "value": mem }).then(() => {}, () => {});
+            panel.webview.postMessage({ "type": "memdata", "time": timemem, "value": mem }).then(() => { }, () => { });
         }
         // CPU
-        panel.webview.postMessage({ "type": "cpudata", "time": timecpu, "value": cpu }).then(() => {}, () => {});
+        panel.webview.postMessage({ "type": "cpudata", "time": timecpu, "value": cpu }).then(() => { }, () => { });
     } catch {
         console.error("Webview post failed. May be due to process interval not yet being closed.");
     }
 }
 
 /**
+ * Get data for Windows and post it to the Webview.
  * @deprecated
- * @param pid Process ID to check
+ * @param pid Process ID to check.
  */
 function getWin(pid: number) {
     exec(`tasklist /fi "PID eq ${pid}" /nh /v /fo csv`, (error, stdout, stderr) => {
@@ -244,8 +253,8 @@ function getWin(pid: number) {
             try {
                 // Send data to webview
                 // Make sure to catch promise rejections (when the webview has been closed but a message is still posted) with .then()
-                panel.webview.postMessage({ "type": "memdata", "time": time, "value": memkb * 1024 }).then(() => {}, () => {});
-                panel.webview.postMessage({ "type": "cpudata", "time": time, "value": cputime/1000 }).then(() => {}, () => {});
+                panel.webview.postMessage({ "type": "memdata", "time": time, "value": memkb * 1024 }).then(() => { }, () => { });
+                panel.webview.postMessage({ "type": "cpudata", "time": time, "value": cputime / 1000 }).then(() => { }, () => { });
             } catch {
                 console.error("Webview post failed. May be due to process interval not yet being closed.");
             }
@@ -254,8 +263,9 @@ function getWin(pid: number) {
 }
 
 /**
+ * Get data for Unix and post it to the Webview.
  * @deprecated
- * @param pid Process ID to check
+ * @param pid Process ID to check.
  */
 function getMemUnix(pid: number) {
     exec(`ps -p ${pid} --no-headers --format size,cputime`, (error, stdout, stderr) => {
@@ -272,8 +282,8 @@ function getMemUnix(pid: number) {
             try {
                 // Send data to webview
                 // Make sure to catch promise rejections (when the webview has been closed but a message is still posted) with .then()
-                panel.webview.postMessage({ "type": "memdata", "time": time, "value": memkb * 1024 }).then(() => {}, () => {});
-                panel.webview.postMessage({ "type": "cpudata", "time": time, "value": cputime/1000 }).then(() => {}, () => {});
+                panel.webview.postMessage({ "type": "memdata", "time": time, "value": memkb * 1024 }).then(() => { }, () => { });
+                panel.webview.postMessage({ "type": "cpudata", "time": time, "value": cputime / 1000 }).then(() => { }, () => { });
             } catch {
                 console.error("Webview post failed. May be due to process interval not yet being closed.");
             }

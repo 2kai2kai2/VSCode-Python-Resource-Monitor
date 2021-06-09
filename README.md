@@ -22,6 +22,7 @@ Provides a resource monitor that is opened when debugging Python, including proc
 - Not tested on MacOS.
 - I don't think it will work with the Python multiprocessing module quite yet.
 
+## Recent Major Updates
 ### 0.0.1
 First Release! All the basics seem to work.
 

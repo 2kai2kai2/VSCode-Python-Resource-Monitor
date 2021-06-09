@@ -1,72 +1,73 @@
 {
-  "name": "python-resource-monitor",
-  "displayName": "Python Resource Monitor",
-  "description": "Resource monitor for Python debugging",
-  "version": "0.1.1",
-  "publisher": "kaih2o",
-  "repository": "https://github.com/2kai2kai2/VSCode-Python-Resource-Monitor",
-  "icon": "images/icon.png",
-  "extensionDependencies": [
-    "vscode.python"
-  ],
-  "engines": {
-    "vscode": "^1.56.0"
-  },
-  "categories": [
-    "Visualization",
-    "Debuggers",
-    "Other"
-  ],
-  "keywords": [
-      "performance",
-      "resource",
-      "monitor",
-      "task manager",
-      "python"
-  ],
-  "galleryBanner": {
-      "theme": "dark"
-  },
-  "activationEvents": [
-    "onDebug",
-    "onCommand:python-resource-monitor.rsmInterval",
-    "onCommand:python-resource-monitor.rsmLength"
-  ],
-  "main": "./out/extension.js",
-  "contributes": {
-    "commands": [
-      {
-        "command": "python-resource-monitor.rsmInterval",
-        "title": "PyRSM: Polling Interval"
-      },
-      {
-        "command": "python-resource-monitor.rsmLength",
-        "title": "PyRSM: Length"
-      }
-    ]
-  },
-  "scripts": {
-    "vscode:prepublish": "npm run compile",
-    "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./",
-    "pretest": "npm run compile && npm run lint",
-    "lint": "eslint src --ext ts",
-    "test": "node ./out/test/runTest.js"
-  },
-  "devDependencies": {
-    "@types/glob": "^7.1.3",
-    "@types/mocha": "^8.0.4",
-    "@types/node": "^12.11.7",
-    "@types/vscode": "^1.56.0",
-    "@typescript-eslint/eslint-plugin": "^4.14.1",
-    "@typescript-eslint/parser": "^4.14.1",
-    "eslint": "^7.19.0",
-    "glob": "^7.1.6",
-    "mocha": "^8.2.1",
-    "typescript": "^4.1.3",
-    "vscode-test": "^1.5.0"
-  },
-  "dependencies": {
-    "node-ps-data": "^1.0.4"
-  }
+    "name": "python-resource-monitor",
+    "displayName": "Python Resource Monitor",
+    "description": "Resource monitor for Python debugging",
+    "version": "0.1.2",
+    "publisher": "kaih2o",
+    "repository": "https://github.com/2kai2kai2/VSCode-Python-Resource-Monitor",
+    "icon": "images/icon.png",
+    "extensionDependencies": [
+        "vscode.python"
+    ],
+    "engines": {
+        "vscode": "^1.56.0"
+    },
+    "categories": [
+        "Visualization",
+        "Debuggers",
+        "Other"
+    ],
+    "keywords": [
+        "performance",
+        "resource",
+        "monitor",
+        "task manager",
+        "python"
+    ],
+    "galleryBanner": {
+        "color": "#e1e1e1",
+        "theme": "dark"
+    },
+    "activationEvents": [
+        "onDebug",
+        "onCommand:python-resource-monitor.rsmInterval",
+        "onCommand:python-resource-monitor.rsmLength"
+    ],
+    "main": "./out/extension.js",
+    "contributes": {
+        "commands": [
+            {
+                "command": "python-resource-monitor.rsmInterval",
+                "title": "PyRSM: Polling Interval"
+            },
+            {
+                "command": "python-resource-monitor.rsmLength",
+                "title": "PyRSM: Length"
+            }
+        ]
+    },
+    "scripts": {
+        "vscode:prepublish": "npm run compile",
+        "compile": "tsc -p ./",
+        "watch": "tsc -watch -p ./",
+        "pretest": "npm run compile && npm run lint",
+        "lint": "eslint src --ext ts",
+        "test": "node ./out/test/runTest.js"
+    },
+    "devDependencies": {
+        "@types/glob": "^7.1.3",
+        "@types/mocha": "^8.0.4",
+        "@types/node": "^12.11.7",
+        "@types/vscode": "^1.56.0",
+        "@typescript-eslint/eslint-plugin": "^4.14.1",
+        "@typescript-eslint/parser": "^4.14.1",
+        "eslint": "^7.19.0",
+        "glob": "^7.1.6",
+        "mocha": "^8.2.1",
+        "typescript": "^4.1.3",
+        "vscode-test": "^1.5.0"
+    },
+    "dependencies": {
+        "node-ps-data": "^1.0.4"
+    }
 }
