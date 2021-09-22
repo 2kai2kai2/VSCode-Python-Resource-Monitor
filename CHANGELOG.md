@@ -5,7 +5,6 @@ All notable changes to the Python Resource Monitor extension will be documented 
 ## 0.0.1 - Alpha
 - Initial release
 
-
 ## 0.0.2 - Alpha
 - Added icon and more details.
 
@@ -19,3 +18,6 @@ All notable changes to the Python Resource Monitor extension will be documented 
 
 ## 0.1.2 - Alpha
 - Fixed marketplace colorscheme
+
+## 0.1.3 - Alpha
+- Updated dependencies including my `node-ps-data` addon with an improved build system.
