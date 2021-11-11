@@ -25,6 +25,7 @@ _Test program storing strings of random sizes in memory_
 - Hopefully, this will one day work for many languages and debuggers!
 - Not tested on MacOS.
 - I don't think it will work with the Python multiprocessing module quite yet.
+- Response to mouseover of the graph.
 
 ## Recent Major Updates
 
@@ -35,3 +36,7 @@ Millisecond-accuracy for CPU usage. When writing the module, tested with Linux.
 ### 0.1.3
 
 Native addon build now includes binaries.
+
+### 0.1.4
+
+Improved flexibility of displays.

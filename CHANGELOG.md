@@ -21,3 +21,8 @@ All notable changes to the Python Resource Monitor extension will be documented 
 
 ## 0.1.3 - Alpha
 - Updated dependencies including my `node-ps-data` addon with an improved build system.
+
+## 0.1.4 - Alpha
+- Add responsive design with display scaling
+- Add support for theme colors
+- Display process ID

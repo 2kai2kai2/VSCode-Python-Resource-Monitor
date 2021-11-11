@@ -13,7 +13,9 @@ const themeGrey = style.getPropertyValue("--vscode-terminal-ansiBrightBlack");
 /** @type {String} */
 const themeGreen = style.getPropertyValue("--vscode-terminal-ansiGreen");
 
+/** @type {Map<Number, Number>} */
 var memory = new Map();
+/** @type {Map<Number, Number>} */
 var cpu = new Map();
 
 /** Length in milliseconds to keep in logs. */
@@ -22,7 +24,7 @@ var length = 0;
 /**
  * Creates a string representation of time units.
  * @param {number} millis Time in milliseconds.
- * @returns String representing time and its unit with 1 decimal place.
+ * @returns {String} A string representing time and its unit with 1 decimal place.
  */
 function timeUnits(millis) {
   millis = Math.floor(millis);
@@ -40,7 +42,7 @@ function timeUnits(millis) {
 /**
  * Creates a string representation of memory units.
  * @param {number} bytes Number of bytes.
- * @returns String representing memory and its unit with 0 decimal places.
+ * @returns {String} A string representing memory and its unit with 0 decimal places.
  */
 function memUnits(bytes) {
   if (bytes >= 1024 ** 3) {
@@ -57,7 +59,7 @@ function memUnits(bytes) {
 /**
  * Creates a string representation of CPU utilization.
  * @param {number} cputime Percentage CPU utilization.
- * @returns String representing CPU utilization percentage with 2 decimal places.
+ * @returns {String} A string representing CPU utilization percentage with 2 decimal places.
  */
 function cpuUnits(cputime) {
   return Math.ceil(cputime * 100) / 100 + "%";
@@ -88,37 +90,54 @@ function updateGraph(
   unitFuncY,
   data
 ) {
+  let rangeY = maxY - minY;
+  let rangeX = maxX - minX;
+
   // Decide on tick marks (this may eventually be scalable/zoomable)
-  // Y - memory
-  let intervalY = (maxY - minY) / ticksY;
-
+  // Y - memory/cpu time
+  let intervalY = rangeY / ticksY;
   // X - time
-  let intervalX = (maxX - minX) / ticksX;
+  let intervalX = rangeX / ticksX;
 
-  // Some functions to consistently get canvas location from graph values
   const marginL = 48;
   const marginR = 20;
   const marginTop = 10;
   const marginBottom = 20;
+
+  // Calculate some values beforehand for readability
+  /** Y location where the bottom of the graph should be on the canvas, in pixels. */
+  let graphBottom = canvas.height - marginBottom;
+  /** Distance between where the top and bottom of the graph should be on the canvas, in pixels. */
+  let graphHeight = canvas.height - marginBottom - marginTop;
+  /** X location where the right edge of the graph should be on the canvas, in pixels. */
+  let graphRight = canvas.width - marginR;
+  /** Distance between where the left and right edges of the graph should be on the canvas, in pixels. */
+  let graphWidth = canvas.width - marginR - marginL;
+
+  // Some functions to consistently get canvas location from graph values
+  /**
+   * @param {number} graphX An X data value from the graph.
+   * @returns {number} The X location on the canvas where the data cooresponds to.
+   */
   function canvasX(graphX) {
     return Math.min(
-      canvas.width - marginR,
+      graphRight,
       Math.max(
         marginL,
-        marginL +
-          (canvas.width - marginR - marginL) * ((graphX - minX) / (maxX - minX))
+        marginL + graphWidth * ((graphX - minX) / rangeX)
       )
     );
   }
+  /**
+   * @param {number} graphY An Y data value from the graph.
+   * @returns {number} The Y location on the canvas where the data cooresponds to.
+   */
   function canvasY(graphY) {
     return Math.min(
-      canvas.height - marginBottom,
+      graphBottom,
       Math.max(
         marginTop,
-        canvas.height -
-          marginBottom -
-          (canvas.height - marginBottom - marginTop) *
-            ((graphY - minY) / (maxY - minY))
+        graphBottom - graphHeight * ((graphY - minY) / rangeY)
       )
     );
   }
@@ -135,12 +154,12 @@ function updateGraph(
   for (let ticknum = 0; ticknum <= ticksX; ticknum++) {
     let graphX = maxX - intervalX * ticknum;
     let cX = canvasX(graphX);
-    context.moveTo(cX, canvas.height - marginBottom);
+    context.moveTo(cX, graphBottom);
     context.lineTo(cX, marginTop);
     context.fillText(
       "-" + unitFuncX(maxX - graphX),
       cX,
-      canvas.height - marginBottom + 12
+      graphBottom + 12
     );
   }
   // Y axis
@@ -149,7 +168,7 @@ function updateGraph(
     let graphY = intervalY * ticknum;
     let cY = canvasY(graphY);
     context.moveTo(marginL, cY);
-    context.lineTo(canvas.width - marginR, cY);
+    context.lineTo(graphRight, cY);
     context.fillText(unitFuncY(graphY), marginL - 2, cY);
   }
   context.stroke();
@@ -158,9 +177,9 @@ function updateGraph(
   context.strokeStyle = themeWhite;
   context.beginPath();
   context.moveTo(marginL, marginTop);
-  context.lineTo(marginL, canvas.height - marginBottom);
-  context.lineTo(canvas.width - marginR, canvas.height - marginBottom);
-  context.lineTo(canvas.width - marginR, marginTop);
+  context.lineTo(marginL, graphBottom);
+  context.lineTo(graphRight, graphBottom);
+  context.lineTo(graphRight, marginTop);
   context.stroke();
 
   // Draw line
@@ -244,7 +263,7 @@ function updateCpu() {
   });
   if (length !== 0) {
     minTime = maxTime - length;
-    // Prune
+    // Prune data older than minTime
     cpu.forEach((value, key) => {
       if (key < minTime) {
         cpu.delete(key);
@@ -302,15 +321,15 @@ window.addEventListener("message", (e) => {
 });
 
 /**
- * Reize graphs to an appropriate size.
+ * Resize graphs to an appropriate size.
  *
- * 4:1 width:height
+ * `4:1 width:height`
  */
 function resize() {
-  memCanvas.width = memCanvas.parentElement.offsetWidth; //document.getElementById("memoryGroup").clientWidth;
-  memCanvas.height = memCanvas.parentElement.offsetHeight; //document.getElementById("memoryGroup").clientWidth / 4;
-  cpuCanvas.width = cpuCanvas.parentElement.offsetWidth; //document.getElementById("cpuGroup").clientWidth;
-  cpuCanvas.height = cpuCanvas.parentElement.offsetHeight; //document.getElementById("cpuGroup").clientWidth / 4;
+  memCanvas.width = memCanvas.parentElement.offsetWidth - 20; //document.getElementById("memoryGroup").clientWidth;
+  memCanvas.height = memCanvas.parentElement.offsetWidth / 4; //document.getElementById("memoryGroup").clientWidth / 4;
+  cpuCanvas.width = cpuCanvas.parentElement.offsetWidth - 20; //document.getElementById("cpuGroup").clientWidth;
+  cpuCanvas.height = cpuCanvas.parentElement.offsetWidth / 4; //document.getElementById("cpuGroup").clientWidth / 4;
 }
 window.addEventListener("resize", (e) => {
   resize();
