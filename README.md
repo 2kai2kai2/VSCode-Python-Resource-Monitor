@@ -1,8 +1,12 @@
+![GitHub Version](https://img.shields.io/github/package-json/v/2kai2kai2/VSCode-Python-Resource-Monitor?color=blue&logo=Github)
+![Published Version](https://img.shields.io/visual-studio-marketplace/v/kaih2o.python-resource-monitor?color=blue&logo=Visual%20Studio%20Code&logoColor=%230078d7)
+![Installs](https://img.shields.io/visual-studio-marketplace/i/kaih2o.python-resource-monitor?logo=Visual%20Studio%20Code&logoColor=%230078d7)
+![Last Updated](https://img.shields.io/visual-studio-marketplace/last-updated/kaih2o.python-resource-monitor?logo=Visual%20Studio%20Code&logoColor=%230078d7)
 # Python Resource Monitor
 
 Until now, resource and performance monitor extensions in VS Code only displayed current global resource consumption data via lists and text. Likewise, it is very awkward to use third-party tools to find the process you want to monitor.
 
-However, this extension provides an easier, graphical solution that can show data specific to the process being used by the Python debugger! _Yeah, so I made this because searching for the right python process in task manager was annoying_
+However, this extension provides an easier, graphical solution that can show data specific to the process being used by the Python debugger! _Yeah, so I made this because searching for the right Python process in Task Manager was annoying._
 
 ## Features
 

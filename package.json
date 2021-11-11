@@ -2,7 +2,7 @@
     "name": "python-resource-monitor",
     "displayName": "Python Resource Monitor",
     "description": "Resource monitor for Python debugging",
-    "version": "0.1.4",
+    "version": "0.1.5",
     "publisher": "kaih2o",
     "contributors": [
         "2kai2kai2",
@@ -29,7 +29,8 @@
         "python"
     ],
     "galleryBanner": {
-        "theme": "dark"
+        "theme": "dark",
+        "color": "#252526"
     },
     "activationEvents": [
         "onDebug",

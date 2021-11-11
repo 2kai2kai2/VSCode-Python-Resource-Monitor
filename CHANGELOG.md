@@ -26,3 +26,6 @@ All notable changes to the Python Resource Monitor extension will be documented 
 - Add responsive design with display scaling
 - Add support for theme colors
 - Display process ID
+
+## 0.1.5 - Alpha
+- Add code badges
