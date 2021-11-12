@@ -13,11 +13,14 @@ However, this extension provides an easier, graphical solution that can show dat
 Provides a resource monitor that is opened when debugging Python, including process memory and cpu usage. Automatically launches (or reuses existing tab) upon debugging with Python.
 
 ![usage](images/usage.gif)
+
 _Test program storing strings of random sizes in memory_
 
 ### Uses theme colors
 
 ![usage2](images/dark_sc.png)
+
+### Customizable
 
 | Command                   | Usage                                                                                                                               |
 | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |

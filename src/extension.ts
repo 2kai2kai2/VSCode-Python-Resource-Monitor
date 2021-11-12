@@ -2,7 +2,7 @@ import { join } from "path";
 import * as vscode from "vscode";
 import { exec } from "child_process";
 
-// If node-ps-data fails to load (possibly due to a failed build, etc.) use the existing depreciated methods.
+// If node-ps-data fails to load (possibly due to a failed build, MacOS, etc.) use the existing depreciated methods.
 var ps: any;
 try {
   ps = require("node-ps-data");
@@ -272,11 +272,13 @@ function getData(pid: number) {
             let sessionName = items[2];
             let sessionNum = parseInt(items[3]);
             let memkb = parseInt(items[4].replace(",", "").replace(" K", ""));
-            /*let status = items[5];
-                    let user = items[6];
-                    let cpuitems = items[7].split(":");
-                    let cputime = parseInt(cpuitems[0]) * 60 * 60 + parseInt(cpuitems[1]) * 60 + parseInt(cpuitems[2]);
-                    let windowname = items[8];*/
+            /*
+            let status = items[5];
+            let user = items[6];
+            let cpuitems = items[7].split(":");
+            let cputime = parseInt(cpuitems[0]) * 60 * 60 + parseInt(cpuitems[1]) * 60 + parseInt(cpuitems[2]);
+            let windowname = items[8];
+            */
             // Send data to webview
             // Make sure to catch promise rejections (when the webview has been closed but a message is still posted) with .then()
             panel.webview
