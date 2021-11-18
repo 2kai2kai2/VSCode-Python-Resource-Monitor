@@ -35,3 +35,6 @@ All notable changes to the Python Resource Monitor extension will be documented 
 
 ## 0.1.7 - Alpha
 - Quick fix for `0.1.6 - Alpha`
+
+## 0.1.8 - Alpha
+- With the new update of `node-ps-data` ensuring consistency in memory results on Windows, we no longer use the `tasklist` shell command except as a fallback, and prefer `node-ps-data`.

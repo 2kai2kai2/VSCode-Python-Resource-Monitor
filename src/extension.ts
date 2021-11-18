@@ -22,15 +22,18 @@ var rsmLength = 10000;
  * @param pid The process ID to track with the resource monitor.
  */
 async function launchWebview(context: vscode.ExtensionContext, pid: number) {
+  // If a webview already exists, get rid of it.
   try {
     panel.dispose();
-  } catch {}
+  } catch { }
+  // Create the webview
   panel = vscode.window.createWebviewPanel(
     "resourceMonitor",
     "Resource Monitor",
     vscode.ViewColumn.Beside,
     { enableScripts: true }
   );
+  // Set page
   let paneljs = panel.webview.asWebviewUri(
     vscode.Uri.file(join(context.extensionPath, "webview", "panel.js"))
   );
@@ -70,6 +73,7 @@ async function launchWebview(context: vscode.ExtensionContext, pid: number) {
     `;
   panel.webview.postMessage({ type: "length", value: rsmLength });
 
+  // Start updates
   startMonitor(pid);
   console.log(`Starting resource monitor for process ID ${pid}.`);
 }
@@ -90,8 +94,7 @@ class PyDebugAdapterTracker implements vscode.DebugAdapterTracker {
 }
 
 class PyDebugAdapterTrackerFactory
-  implements vscode.DebugAdapterTrackerFactory
-{
+  implements vscode.DebugAdapterTrackerFactory {
   context: vscode.ExtensionContext;
   constructor(context: vscode.ExtensionContext) {
     this.context = context;
@@ -189,7 +192,7 @@ export function activate(context: vscode.ExtensionContext) {
               () => {
                 // On failure
                 vscode.window.showErrorMessage(
-                  "Failed to change resource monitor length. Has it been closed?"
+                  "Failed to change running resource monitor length. Has it been closed? Change will take effect on next start."
                 );
               }
             );
@@ -214,7 +217,7 @@ export function activate(context: vscode.ExtensionContext) {
               () => {
                 // On failure
                 vscode.window.showErrorMessage(
-                  "Failed to change resource monitor length. Has it been closed?"
+                  "Failed to change running resource monitor length. Has it been closed? Change will take effect on next start."
                 );
               }
             );
@@ -244,6 +247,22 @@ export function activate(context: vscode.ExtensionContext) {
   });
 }
 
+function postData(key: "memdata" | "cpudata", time: number, value: number) {
+  try {
+    // Make sure to catch promise rejections (when the webview has been closed but a message is still posted) with .then()
+    panel.webview
+      .postMessage({ type: key, time: time, value: value })
+      .then(
+        () => { },
+        () => { }
+      );
+  } catch {
+    console.error(
+      "Webview post failed. May be due to process interval not yet being closed."
+    );
+  }
+}
+
 /**
  * Get data for a specified process ID using node-ps-data.
  * @param pid Process ID to check.
@@ -251,71 +270,11 @@ export function activate(context: vscode.ExtensionContext) {
 function getData(pid: number) {
   let cpu = ps.cpuTime(pid);
   let timecpu = Date.now();
-  try {
-    // Send data to webview
-    // Make sure to catch promise rejections (when the webview has been closed but a message is still posted) with .then()
-    // Windows memory data isn't as accurate so use tasklist
-    if (process.platform === "win32") {
-      exec(
-        `tasklist /fi "PID eq ${pid}" /nh /v /fo csv`,
-        (error, stdout, stderr) => {
-          let timemem = Date.now();
-          if (error) {
-            console.error(`Error: ${error.message}`);
-          } else if (stderr) {
-            console.error(`stderr: ${stderr}`);
-          } else {
-            stdout = stdout.slice(1, stdout.length - 1);
-            let items = stdout.trim().split('","');
-            let name = items[0];
-            // pid = items[1]
-            let sessionName = items[2];
-            let sessionNum = parseInt(items[3]);
-            let memkb = parseInt(items[4].replace(",", "").replace(" K", ""));
-            /*
-            let status = items[5];
-            let user = items[6];
-            let cpuitems = items[7].split(":");
-            let cputime = parseInt(cpuitems[0]) * 60 * 60 + parseInt(cpuitems[1]) * 60 + parseInt(cpuitems[2]);
-            let windowname = items[8];
-            */
-            // Send data to webview
-            // Make sure to catch promise rejections (when the webview has been closed but a message is still posted) with .then()
-            panel.webview
-              .postMessage({
-                type: "memdata",
-                time: timemem,
-                value: memkb * 1024,
-              })
-              .then(
-                () => {},
-                () => {}
-              );
-          }
-        }
-      );
-    } else {
-      let timemem = Date.now();
-      let mem = ps.memInfo(pid);
-      panel.webview
-        .postMessage({ type: "memdata", time: timemem, value: mem })
-        .then(
-          () => {},
-          () => {}
-        );
-    }
-    // CPU
-    panel.webview
-      .postMessage({ type: "cpudata", time: timecpu, value: cpu })
-      .then(
-        () => {},
-        () => {}
-      );
-  } catch {
-    console.error(
-      "Webview post failed. May be due to process interval not yet being closed."
-    );
-  }
+  let mem = ps.memInfo(pid);
+  let timemem = Date.now();
+  // Send data to webview
+  postData("memdata", timemem, mem);
+  postData("cpudata", timecpu, cpu);
 }
 
 /**
@@ -335,39 +294,22 @@ function getWin(pid: number) {
       } else {
         stdout = stdout.slice(1, stdout.length - 1);
         let items = stdout.trim().split('","');
-        let name = items[0];
+        // let name = items[0];
         // pid = items[1]
-        let sessionName = items[2];
-        let sessionNum = parseInt(items[3]);
+        // let sessionName = items[2];
+        // let sessionNum = parseInt(items[3]);
         let memkb = parseInt(items[4].replace(",", "").replace(" K", ""));
-        let status = items[5];
-        let user = items[6];
+        // let status = items[5];
+        // let user = items[6];
         let cpuitems = items[7].split(":");
         let cputime =
           parseInt(cpuitems[0]) * 60 * 60 +
           parseInt(cpuitems[1]) * 60 +
           parseInt(cpuitems[2]);
         let windowname = items[8];
-        try {
-          // Send data to webview
-          // Make sure to catch promise rejections (when the webview has been closed but a message is still posted) with .then()
-          panel.webview
-            .postMessage({ type: "memdata", time: time, value: memkb * 1024 })
-            .then(
-              () => {},
-              () => {}
-            );
-          panel.webview
-            .postMessage({ type: "cpudata", time: time, value: cputime / 1000 })
-            .then(
-              () => {},
-              () => {}
-            );
-        } catch {
-          console.error(
-            "Webview post failed. May be due to process interval not yet being closed."
-          );
-        }
+        // Send data to webview
+        postData("memdata", time, memkb * 1024);
+        postData("cpudata", time, cputime / 1000);
       }
     }
   );
@@ -378,7 +320,7 @@ function getWin(pid: number) {
  * @deprecated
  * @param pid Process ID to check.
  */
-function getMemUnix(pid: number) {
+function getUnix(pid: number) {
   exec(
     `ps -p ${pid} --no-headers --format size,cputime`,
     (error, stdout, stderr) => {
@@ -395,45 +337,30 @@ function getMemUnix(pid: number) {
           parseInt(cpuitems[0]) * 60 * 60 +
           parseInt(cpuitems[1]) * 60 +
           parseInt(cpuitems[2]);
-        try {
-          // Send data to webview
-          // Make sure to catch promise rejections (when the webview has been closed but a message is still posted) with .then()
-          panel.webview
-            .postMessage({ type: "memdata", time: time, value: memkb * 1024 })
-            .then(
-              () => {},
-              () => {}
-            );
-          panel.webview
-            .postMessage({ type: "cpudata", time: time, value: cputime / 1000 })
-            .then(
-              () => {},
-              () => {}
-            );
-        } catch {
-          console.error(
-            "Webview post failed. May be due to process interval not yet being closed."
-          );
-        }
+        // Send data to webview
+        postData("memdata", time, memkb * 1024);
+        postData("cpudata", time, cputime / 1000);
       }
     }
   );
 }
 
 function startMonitor(pid: number) {
-  let meminterval: NodeJS.Timeout;
+  let updateInterval: NodeJS.Timeout;
   if (ps) {
-    meminterval = setInterval(getData, pollingInterval, pid);
+    updateInterval = setInterval(getData, pollingInterval, pid);
   } else if (process.platform === "win32") {
-    meminterval = setInterval(getWin, pollingInterval, pid);
+    console.log("node-ps-data load failed; using Windows tasklist shell command.");
+    updateInterval = setInterval(getWin, pollingInterval, pid);
   } else {
-    meminterval = setInterval(getMemUnix, pollingInterval, pid);
+    console.log("node-ps-data load failed; using Unix ps shell command.");
+    updateInterval = setInterval(getUnix, pollingInterval, pid);
   }
   panel.onDidDispose(() => {
-    clearInterval(meminterval);
+    clearInterval(updateInterval);
   });
   vscode.debug.onDidTerminateDebugSession(() => {
-    clearInterval(meminterval);
+    clearInterval(updateInterval);
   });
 }
 
