@@ -247,6 +247,12 @@ export function activate(context: vscode.ExtensionContext) {
   });
 }
 
+/**
+ * Send a datapoint to the Webview.
+ * @param key The type of data to send.
+ * @param time Timestamp for the data value.
+ * @param value Value of data.
+ */
 function postData(key: "memdata" | "cpudata", time: number, value: number) {
   try {
     // Make sure to catch promise rejections (when the webview has been closed but a message is still posted) with .then()
@@ -306,7 +312,7 @@ function getWin(pid: number) {
           parseInt(cpuitems[0]) * 60 * 60 +
           parseInt(cpuitems[1]) * 60 +
           parseInt(cpuitems[2]);
-        let windowname = items[8];
+        // let windowname = items[8];
         // Send data to webview
         postData("memdata", time, memkb * 1024);
         postData("cpudata", time, cputime / 1000);

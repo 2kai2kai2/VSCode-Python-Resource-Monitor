@@ -6,16 +6,16 @@ const cpuCanvas = document.getElementById("cpu");
 /** @type {CSSStyleDeclaration} */
 const style = getComputedStyle(document.body);
 
-/** @type {String} */
+/** @type {string} */
 const themeWhite = style.getPropertyValue("--vscode-terminal-ansiWhite");
-/** @type {String} */
+/** @type {string} */
 const themeGrey = style.getPropertyValue("--vscode-terminal-ansiBrightBlack");
-/** @type {String} */
+/** @type {string} */
 const themeGreen = style.getPropertyValue("--vscode-terminal-ansiGreen");
 
-/** @type {Map<Number, Number>} */
+/** @type {Map<number, number>} */
 var memory = new Map();
-/** @type {Map<Number, Number>} */
+/** @type {Map<number, number>} */
 var cpu = new Map();
 
 /** Length in milliseconds to keep in logs. */
@@ -24,7 +24,7 @@ var length = 0;
 /**
  * Creates a string representation of time units.
  * @param {number} millis Time in milliseconds.
- * @returns {String} A string representing time and its unit with 1 decimal place.
+ * @returns {string} A string representing time and its unit with 1 decimal place.
  */
 function timeUnits(millis) {
   millis = Math.floor(millis);
@@ -42,7 +42,7 @@ function timeUnits(millis) {
 /**
  * Creates a string representation of memory units.
  * @param {number} bytes Number of bytes.
- * @returns {String} A string representing memory and its unit with 0 decimal places.
+ * @returns {string} A string representing memory and its unit with 0 decimal places.
  */
 function memUnits(bytes) {
   if (bytes >= 1024 ** 3) {
@@ -59,7 +59,7 @@ function memUnits(bytes) {
 /**
  * Creates a string representation of CPU utilization.
  * @param {number} cputime Percentage CPU utilization.
- * @returns {String} A string representing CPU utilization percentage with 2 decimal places.
+ * @returns {string} A string representing CPU utilization percentage with 2 decimal places.
  */
 function cpuUnits(cputime) {
   return Math.ceil(cputime * 100) / 100 + "%";
@@ -94,7 +94,7 @@ function updateGraph(
   let rangeX = maxX - minX;
 
   // Decide on tick marks (this may eventually be scalable/zoomable)
-  // Y - memory/cpu time
+  // Y - memory usage/cpu time
   let intervalY = rangeY / ticksY;
   // X - time
   let intervalX = rangeX / ticksX;
@@ -105,19 +105,19 @@ function updateGraph(
   const marginBottom = 20;
 
   // Calculate some values beforehand for readability
-  /** Y location where the bottom of the graph should be on the canvas, in pixels. */
+  /** Y location where the bottom of the graph should be on the {@link canvas}, in pixels. */
   let graphBottom = canvas.height - marginBottom;
-  /** Distance between where the top and bottom of the graph should be on the canvas, in pixels. */
+  /** Distance between where the top and bottom of the graph should be on the {@link canvas}, in pixels. */
   let graphHeight = canvas.height - marginBottom - marginTop;
-  /** X location where the right edge of the graph should be on the canvas, in pixels. */
+  /** X location where the right edge of the graph should be on the {@link canvas}, in pixels. */
   let graphRight = canvas.width - marginR;
-  /** Distance between where the left and right edges of the graph should be on the canvas, in pixels. */
+  /** Distance between where the left and right edges of the graph should be on the {@link canvas}, in pixels. */
   let graphWidth = canvas.width - marginR - marginL;
 
   // Some functions to consistently get canvas location from graph values
   /**
    * @param {number} graphX An X data value from the graph.
-   * @returns {number} The X location on the canvas where the data cooresponds to.
+   * @returns {number} The X location on the {@link canvas} that the data corresponds to.
    */
   function canvasX(graphX) {
     return Math.min(
@@ -130,7 +130,7 @@ function updateGraph(
   }
   /**
    * @param {number} graphY An Y data value from the graph.
-   * @returns {number} The Y location on the canvas where the data cooresponds to.
+   * @returns {number} The Y location on the {@link canvas} that the data corresponds to.
    */
   function canvasY(graphY) {
     return Math.min(
@@ -194,7 +194,7 @@ function updateGraph(
 }
 
 /**
- * Updates the memory graph based on the data in `memory` map.
+ * Updates the memory graph based on the data in the {@link memory} map.
  */
 function updateMem() {
   // Get bounds of graph
@@ -242,7 +242,7 @@ function updateMem() {
 }
 
 /**
- * Updates the CPU graph based on the data in `cpu` map.
+ * Updates the CPU graph based on the data in the {@link cpu} map.
  */
 function updateCpu() {
   let maxCpu = 0;
