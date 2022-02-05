@@ -43,28 +43,25 @@ async function launchWebview(context: vscode.ExtensionContext, pid: number) {
   panel.webview.html = `
         <html lang="en">
         <head>
-            <meta charset="UTF-8" />
-            <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>Resource Monitor</title>
-            <link
-            href="https://raw.githubusercontent.com/microsoft/vscode-codicons/40014cd4f4415cd8aca14c50370c32346473cf6f/src/icons/graph.svg"
-            rel="icon"
-            />
+            <link href="https://raw.githubusercontent.com/microsoft/vscode-codicons/40014cd4f4415cd8aca14c50370c32346473cf6f/src/icons/graph.svg" rel="icon">
         </head>
-        <body style="height: 100%; width: 100%; padding: 0">
+        <body style="height: 100%; width: 100%; padding: 0;">
             <div id="container" style="margin-left: 10px;">
-            <h3>Process Info:</h3>
-            <div id="processinfo">
-                <div id="processid">PID: ${pid}</div>
-            </div>
-            <h3 id="memtitle">Memory Usage</h3>
-            <div style="width: 100%; max-height: 150px; margin: 0 auto">
-                <canvas id="memory" style="width: 100%; height: 100%"></canvas>
-            </div>
-            <h3 id="cputitle">CPU Usage</h3>
-            <div style="width: 100%; max-height: 150px; margin: 0 auto">
-                <canvas id="cpu" style="width: 100%; height: 100%"></canvas>
-            </div>
+                <h3>Process ID: ${pid}</h3>
+                <h3 id="memtitle">Memory Usage</h3>
+                <div style="width: 100%; max-height: 150px; margin: 0 auto;">
+                    <canvas id="memory" style="width: 100%; height: 100%;"></canvas>
+                </div>
+                <h3 id="cputitle">CPU Usage</h3>
+                <div style="width: 100%; max-height: 150px; margin: 0 auto;">
+                    <canvas id="cpu" style="width: 100%; height: 100%;"></canvas>
+                </div>
+                <a href="https://www.patreon.com/bePatron?u=9073173">
+                    <img src="https://img.shields.io/badge/Patreon-donate-orange?logo=Patreon">
+                </a>
             </div>
             <script src="${paneljs}"></script>
             <script src="${plotlyjs}"></script>
@@ -351,6 +348,10 @@ function getUnix(pid: number) {
   );
 }
 
+/**
+ * Starts the monitor interval and initializes dispose events.
+ * @param pid Process ID to monitor.
+ */
 function startMonitor(pid: number) {
   let updateInterval: NodeJS.Timeout;
   if (ps) {

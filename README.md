@@ -6,6 +6,9 @@
 ![Installs](https://img.shields.io/visual-studio-marketplace/i/kaih2o.python-resource-monitor?logo=Visual%20Studio%20Code&logoColor=%230078d7)
 ![Last Updated](https://img.shields.io/visual-studio-marketplace/last-updated/kaih2o.python-resource-monitor?logo=Visual%20Studio%20Code&logoColor=%230078d7)
 ](https://marketplace.visualstudio.com/items?itemName=kaih2o.python-resource-monitor)
+[
+![Donate](https://img.shields.io/badge/Patreon-donate-orange?logo=Patreon)
+](https://www.patreon.com/bePatron?u=9073173)
 
 # Python Resource Monitor
 
