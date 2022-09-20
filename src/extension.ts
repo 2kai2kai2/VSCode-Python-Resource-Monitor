@@ -1,16 +1,6 @@
 import { join } from "path";
+import * as ps from "node-ps-data";
 import * as vscode from "vscode";
-import { exec } from "child_process";
-
-// If node-ps-data fails to load (possibly due to a failed build, MacOS, etc.) use the existing depreciated methods.
-var ps: any;
-try {
-  ps = require("node-ps-data");
-} catch {
-  console.log(
-    "Failed to load module node-ps-data. Using backup depreciated methods. CPU time resolution will be 1 second."
-  );
-}
 
 var panel: vscode.WebviewPanel;
 var pollingInterval = 100;
@@ -288,88 +278,11 @@ function getData(pid: number) {
 }
 
 /**
- * Get data for Windows and post it to the Webview.
- * @deprecated
- * @param pid Process ID to check.
- */
-function getWin(pid: number) {
-  exec(
-    `tasklist /fi "PID eq ${pid}" /nh /v /fo csv`,
-    (error, stdout, stderr) => {
-      let time = Date.now();
-      if (error) {
-        console.error(`Error: ${error.message}`);
-      } else if (stderr) {
-        console.error(`stderr: ${stderr}`);
-      } else {
-        stdout = stdout.slice(1, stdout.length - 1);
-        let items = stdout.trim().split('","');
-        // let name = items[0];
-        // pid = items[1]
-        // let sessionName = items[2];
-        // let sessionNum = parseInt(items[3]);
-        let memkb = parseInt(items[4].replace(",", "").replace(" K", ""));
-        // let status = items[5];
-        // let user = items[6];
-        let cpuitems = items[7].split(":");
-        let cputime =
-          parseInt(cpuitems[0]) * 60 * 60 +
-          parseInt(cpuitems[1]) * 60 +
-          parseInt(cpuitems[2]);
-        // let windowname = items[8];
-        // Send data to webview
-        postData("memdata", time, memkb * 1024);
-        postData("cpudata", time, cputime / 1000);
-      }
-    }
-  );
-}
-
-/**
- * Get data for Unix and post it to the Webview.
- * @deprecated
- * @param pid Process ID to check.
- */
-function getUnix(pid: number) {
-  exec(
-    `ps -p ${pid} --no-headers --format size,cputime`,
-    (error, stdout, stderr) => {
-      let time = Date.now();
-      if (error) {
-        console.error(`Error: ${error.message}`);
-      } else if (stderr) {
-        console.error(`stderr: ${stderr}`);
-      } else {
-        let items = stdout.trim().split(RegExp("[ \n\t\f\r]+"));
-        let memkb = parseInt(items[0]);
-        let cpuitems = items[1].split(":");
-        let cputime =
-          parseInt(cpuitems[0]) * 60 * 60 +
-          parseInt(cpuitems[1]) * 60 +
-          parseInt(cpuitems[2]);
-        // Send data to webview
-        postData("memdata", time, memkb * 1024);
-        postData("cpudata", time, cputime / 1000);
-      }
-    }
-  );
-}
-
-/**
  * Starts the monitor interval and initializes dispose events.
  * @param pid Process ID to monitor.
  */
 function startMonitor(pid: number) {
-  let updateInterval: NodeJS.Timeout;
-  if (ps) {
-    updateInterval = setInterval(getData, pollingInterval, pid);
-  } else if (process.platform === "win32") {
-    console.log("node-ps-data load failed; using Windows tasklist shell command.");
-    updateInterval = setInterval(getWin, pollingInterval, pid);
-  } else {
-    console.log("node-ps-data load failed; using Unix ps shell command.");
-    updateInterval = setInterval(getUnix, pollingInterval, pid);
-  }
+  let updateInterval: NodeJS.Timer = setInterval(getData, pollingInterval, pid);
   panel.onDidDispose(() => {
     clearInterval(updateInterval);
   });
