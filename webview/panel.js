@@ -2,6 +2,8 @@
 const memCanvas = document.getElementById("memory");
 /** @type {HTMLCanvasElement} */
 const cpuCanvas = document.getElementById("cpu");
+/** @type {HTMLCanvasElement} */
+const fileCanvas = document.getElementById("fileio");
 
 /** @type {CSSStyleDeclaration} */
 const style = getComputedStyle(document.body);
@@ -12,11 +14,17 @@ const themeWhite = style.getPropertyValue("--vscode-terminal-ansiWhite");
 const themeGrey = style.getPropertyValue("--vscode-terminal-ansiBrightBlack");
 /** @type {string} */
 const themeGreen = style.getPropertyValue("--vscode-terminal-ansiGreen");
+/** @type {string} */
+const themeCyan = style.getPropertyValue("--vscode-terminal-ansiCyan");
 
 /** @type {Map<number, number>} */
 var memory = new Map();
 /** @type {Map<number, number>} */
 var cpu = new Map();
+/** @type {Map<number, number>} */
+var fileread = new Map();
+/** @type {Map<number, number>} */
+var filewrite = new Map();
 
 /** Length in milliseconds to keep in logs. */
 var length = 0;
@@ -76,7 +84,9 @@ function cpuUnits(cputime) {
  * @param {number} maxY Maximum Y-axis value. All higher values will be drawn at this value.
  * @param {number} ticksY Number of ticks to include on the Y-axis, including the beginning but excluding the end.
  * @param {function(number): string} unitFuncY The function for formatting tick marks on the Y-axis.
- * @param {Map<number, number>} data Map of datapoints to draw on the graph, sorted by value on the X-axis.
+ * @param {Array<Object>} data Array of objects with information about each line to graph.
+ * - points: `Map<number, number>` `(required)` Mapping of (x, y) coordinates to display. 
+ * - color: `string` `(required)` Style for `CanvasRenderingContext2D.strokeStyle`
  */
 function updateGraph(
   canvas,
@@ -182,15 +192,25 @@ function updateGraph(
   context.lineTo(graphRight, marginTop);
   context.stroke();
 
-  // Draw line
+  // Draw lines
   context.lineWidth = 2;
-  context.strokeStyle = themeGreen;
-  context.beginPath();
-  context.moveTo(canvasX(minX), canvasY(memory.get(minX)));
-  data.forEach((value, key) => {
-    context.lineTo(canvasX(key), canvasY(value));
+  data.forEach((lineobj) => {
+    /** @type {Map<number, number>} */
+    let linedata = lineobj.points;
+    context.strokeStyle = lineobj.color;
+    context.beginPath();
+    let first = true;
+    linedata.forEach((value, key) => {
+      if (first) {
+        context.moveTo(canvasX(key), canvasY(value));
+        first = false;
+      } else {
+        context.lineTo(canvasX(key), canvasY(value));
+      }
+    });
+    context.stroke();
   });
-  context.stroke();
+
 }
 
 /**
@@ -237,7 +257,7 @@ function updateMem() {
     maxMem,
     memticks,
     memUnits,
-    memory
+    [{ points: memory, color: themeGreen }]
   );
 }
 
@@ -249,7 +269,7 @@ function updateCpu() {
   let minTime = Number.MAX_SAFE_INTEGER;
   let maxTime = 0;
   cpu.forEach((value, key) => {
-    // Get bounds for memory; minimum is always 0
+    // Get bounds for cpu; minimum is always 0
     if (value > maxCpu) {
       maxCpu = value;
     }
@@ -280,12 +300,58 @@ function updateCpu() {
     maxCpu,
     5,
     cpuUnits,
-    cpu
+    [{ points: cpu, color: themeGreen }]
+  );
+}
+
+function updateFileIO() {
+  let maxFile = 0;
+  let minTime = Number.MAX_SAFE_INTEGER;
+  let maxTime = 0;
+  let findmax = (value, key) => {
+    // Get bounds for fileio; minimum is always 0
+    if (value > maxFile) {
+      maxFile = value;
+    }
+    // Get bounds for time
+    if (key > maxTime) {
+      maxTime = key;
+    }
+    if (key < minTime) {
+      minTime = key;
+    }
+  }
+  fileread.forEach(findmax);
+  filewrite.forEach(findmax)
+  if (length !== 0) {
+    minTime = maxTime - length;
+    // Prune data older than minTime
+    let prune = (value, key, map) => {
+      if (key < minTime) {
+        map.delete(key);
+      }
+    }
+    fileread.forEach(prune);
+    filewrite.forEach(prune);
+  }
+  updateGraph(
+    fileCanvas,
+    minTime,
+    maxTime,
+    10,
+    timeUnits,
+    0,
+    maxFile,
+    5,
+    memUnits,
+    [{ points: filewrite, color: themeCyan }, { points: fileread, color: themeGreen }]
   );
 }
 
 var lastcputime = -1;
 var lastcpu = -1;
+var lastfileread = -1;
+var lastfilewrite = -1;
 
 window.addEventListener("message", (e) => {
   /** @type {JSON} */
@@ -307,10 +373,38 @@ window.addEventListener("message", (e) => {
       lastcpu = data.value;
       updateCpu();
       break;
+    case "readdata":
+      if (lastfileread >= 0) {
+        // In bytes, the amount of file read performed since the last measurement
+        let deltaR = data.value - lastfileread;
+        fileread.set(data.time, deltaR);
+      }
+      lastfileread = data.value;
+      // updateFileIO();
+      break;
+    case "writedata":
+      if (lastfilewrite >= 0) {
+        // In bytes, the amount of file write performed since the last measurement
+        let deltaW = data.value - lastfilewrite;
+        filewrite.set(data.time, deltaW);
+      }
+      lastfilewrite = data.value;
+      updateFileIO();
+      break;
     case "length":
       length = data.value;
       updateMem();
       updateCpu();
+      updateFileIO();
+      break;
+    case "reset":
+      cpu.clear();
+      updateCpu();
+      memory.clear();
+      updateMem();
+      fileread.clear();
+      filewrite.clear();
+      updateFileIO();
       break;
     default:
       // Discard
@@ -330,11 +424,14 @@ function resize() {
   memCanvas.height = memCanvas.parentElement.offsetWidth / 4; //document.getElementById("memoryGroup").clientWidth / 4;
   cpuCanvas.width = cpuCanvas.parentElement.offsetWidth - 20; //document.getElementById("cpuGroup").clientWidth;
   cpuCanvas.height = cpuCanvas.parentElement.offsetWidth / 4; //document.getElementById("cpuGroup").clientWidth / 4;
+  fileCanvas.width = fileCanvas.parentElement.offsetWidth - 20; //document.getElementById("cpuGroup").clientWidth;
+  fileCanvas.height = fileCanvas.parentElement.offsetWidth / 4; //document.getElementById("cpuGroup").clientWidth / 4;
 }
 window.addEventListener("resize", (e) => {
   resize();
   updateMem();
   updateCpu();
+  updateFileIO();
 });
 resize();
 

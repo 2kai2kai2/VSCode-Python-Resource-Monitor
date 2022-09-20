@@ -55,3 +55,7 @@ Native addon build now includes binaries.
 ### 0.1.4
 
 Improved flexibility of displays.
+
+### 0.2.0
+
+Added file IO data.

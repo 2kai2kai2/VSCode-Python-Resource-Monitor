@@ -37,9 +37,6 @@ async function launchWebview(context: vscode.ExtensionContext, pid: number) {
   let paneljs = panel.webview.asWebviewUri(
     vscode.Uri.file(join(context.extensionPath, "webview", "panel.js"))
   );
-  let plotlyjs = panel.webview.asWebviewUri(
-    vscode.Uri.file(join(context.extensionPath, "webview", "plotly.js"))
-  );
   panel.webview.html = `
         <html lang="en">
         <head>
@@ -59,12 +56,16 @@ async function launchWebview(context: vscode.ExtensionContext, pid: number) {
                 <div style="width: 100%; max-height: 150px; margin: 0 auto;">
                     <canvas id="cpu" style="width: 100%; height: 100%;"></canvas>
                 </div>
+                <h3 id="fileiotitle">File Usage</h3>
+                <p style="color: --vscode-terminal-ansiGreen">Read</p>
+                <div style="width: 100%; max-height: 150px; margin: 0 auto;">
+                    <canvas id="fileio" style="width: 100%; height: 100%;"></canvas>
+                </div>
                 <a href="https://www.patreon.com/bePatron?u=9073173">
                     <img src="https://img.shields.io/badge/Patreon-donate-orange?logo=Patreon">
                 </a>
             </div>
             <script src="${paneljs}"></script>
-            <script src="${plotlyjs}"></script>
         </body>
         </html>
     `;
@@ -250,7 +251,7 @@ export function activate(context: vscode.ExtensionContext) {
  * @param time Timestamp for the data value.
  * @param value Value of data.
  */
-function postData(key: "memdata" | "cpudata", time: number, value: number) {
+function postData(key: "memdata" | "cpudata" | "readdata" | "writedata", time: number, value: number) {
   try {
     // Make sure to catch promise rejections (when the webview has been closed but a message is still posted) with .then()
     panel.webview
@@ -275,9 +276,15 @@ function getData(pid: number) {
   let timecpu = Date.now();
   let mem = ps.memInfo(pid);
   let timemem = Date.now();
+  let read = ps.fileRead(pid);
+  let timeread = Date.now();
+  let write = ps.fileWrite(pid);
+  let timewrite = Date.now();
   // Send data to webview
   postData("memdata", timemem, mem);
   postData("cpudata", timecpu, cpu);
+  postData("readdata", timeread, read);
+  postData("writedata", timewrite, write);
 }
 
 /**

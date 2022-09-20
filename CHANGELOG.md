@@ -41,3 +41,6 @@ All notable changes to the Python Resource Monitor extension will be documented 
 
 ## 0.1.9 - Alpha
 - Add [Patreon](https://www.patreon.com/bePatron?u=9073173) link
+
+## 0.2.0 - Beta
+- Add file read and write data.

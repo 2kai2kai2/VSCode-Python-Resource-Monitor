@@ -1,3 +1,4 @@
 node_modules/
 out/
+test_docs/data.txt
 *.vsix
