@@ -1,3 +1,4 @@
+import * as fs from "fs";
 import { join } from "path";
 import * as ps from "node-ps-data";
 import * as vscode from "vscode";
@@ -27,38 +28,12 @@ async function launchWebview(context: vscode.ExtensionContext, pid: number) {
   let paneljs = panel.webview.asWebviewUri(
     vscode.Uri.file(join(context.extensionPath, "webview", "panel.js"))
   );
-  panel.webview.html = `
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Resource Monitor</title>
-            <link href="https://raw.githubusercontent.com/microsoft/vscode-codicons/40014cd4f4415cd8aca14c50370c32346473cf6f/src/icons/graph.svg" rel="icon">
-        </head>
-        <body style="height: 100%; width: 100%; padding: 0;">
-            <div id="container" style="margin-left: 10px;">
-                <h3>Process ID: ${pid}</h3>
-                <h3 id="memtitle">Memory Usage</h3>
-                <div style="width: 100%; max-height: 150px; margin: 0 auto;">
-                    <canvas id="memory" style="width: 100%; height: 100%;"></canvas>
-                </div>
-                <h3 id="cputitle">CPU Usage</h3>
-                <div style="width: 100%; max-height: 150px; margin: 0 auto;">
-                    <canvas id="cpu" style="width: 100%; height: 100%;"></canvas>
-                </div>
-                <h3 id="fileiotitle">File Usage</h3>
-                <p style="color: --vscode-terminal-ansiGreen">Read</p>
-                <div style="width: 100%; max-height: 150px; margin: 0 auto;">
-                    <canvas id="fileio" style="width: 100%; height: 100%;"></canvas>
-                </div>
-                <a href="https://www.patreon.com/bePatron?u=9073173">
-                    <img src="https://img.shields.io/badge/Patreon-donate-orange?logo=Patreon">
-                </a>
-            </div>
-            <script src="${paneljs}"></script>
-        </body>
-        </html>
-    `;
+
+  var htmlText = fs.readFileSync(join(context.extensionPath, "webview", "panel.html")).toString();
+  htmlText.replace("${pid}", pid.toString());
+  htmlText.replace("${paneljs}", paneljs.toString());
+  panel.webview.html = htmlText;
+
   panel.webview.postMessage({ type: "length", value: rsmLength });
 
   // Start updates
