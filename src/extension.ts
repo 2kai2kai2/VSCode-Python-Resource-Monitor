@@ -30,8 +30,8 @@ async function launchWebview(context: vscode.ExtensionContext, pid: number) {
   );
 
   var htmlText = fs.readFileSync(join(context.extensionPath, "webview", "panel.html")).toString();
-  htmlText.replace("${pid}", pid.toString());
-  htmlText.replace("${paneljs}", paneljs.toString());
+  htmlText = htmlText.replace("${pid}", pid.toString());
+  htmlText = htmlText.replace("${paneljs}", paneljs.toString());
   panel.webview.html = htmlText;
 
   panel.webview.postMessage({ type: "length", value: rsmLength });

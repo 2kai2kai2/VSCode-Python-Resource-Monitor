@@ -320,9 +320,9 @@ function updateFileIO() {
     if (key < minTime) {
       minTime = key;
     }
-  }
+  };
   fileread.forEach(findmax);
-  filewrite.forEach(findmax)
+  filewrite.forEach(findmax);
   if (length !== 0) {
     minTime = maxTime - length;
     // Prune data older than minTime
@@ -330,7 +330,7 @@ function updateFileIO() {
       if (key < minTime) {
         map.delete(key);
       }
-    }
+    };
     fileread.forEach(prune);
     filewrite.forEach(prune);
   }
