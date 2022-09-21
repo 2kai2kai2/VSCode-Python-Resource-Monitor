@@ -1,7 +1,7 @@
-import * as fs from "fs";
-import { join } from "path";
-import * as ps from "node-ps-data";
-import * as vscode from "vscode";
+import * as fs from 'fs';
+import * as ps from 'node-ps-data';
+import {join} from 'path';
+import * as vscode from 'vscode';
 
 var panel: vscode.WebviewPanel;
 var pollingInterval = 100;
@@ -9,32 +9,32 @@ var rsmLength = 10000;
 
 /**
  * Creates and starts a new Webview resource monitor.
- * @param context The VS Code Extension Context from which to launch the Webview.
+ * @param context The VS Code Extension Context from which to launch the
+ *     Webview.
  * @param pid The process ID to track with the resource monitor.
  */
 async function launchWebview(context: vscode.ExtensionContext, pid: number) {
   // If a webview already exists, get rid of it.
   try {
     panel.dispose();
-  } catch { }
+  } catch {
+  }
   // Create the webview
   panel = vscode.window.createWebviewPanel(
-    "resourceMonitor",
-    "Resource Monitor",
-    vscode.ViewColumn.Beside,
-    { enableScripts: true }
-  );
+      'resourceMonitor', 'Resource Monitor', vscode.ViewColumn.Beside,
+      {enableScripts: true});
   // Set page
   let paneljs = panel.webview.asWebviewUri(
-    vscode.Uri.file(join(context.extensionPath, "webview", "panel.js"))
-  );
+      vscode.Uri.file(join(context.extensionPath, 'webview', 'panel.js')));
 
-  var htmlText = fs.readFileSync(join(context.extensionPath, "webview", "panel.html")).toString();
-  htmlText = htmlText.replace("${pid}", pid.toString());
-  htmlText = htmlText.replace("${paneljs}", paneljs.toString());
+  var htmlText =
+      fs.readFileSync(join(context.extensionPath, 'webview', 'panel.html'))
+          .toString();
+  htmlText = htmlText.replace('${pid}', pid.toString());
+  htmlText = htmlText.replace('${paneljs}', paneljs.toString());
   panel.webview.html = htmlText;
 
-  panel.webview.postMessage({ type: "length", value: rsmLength });
+  panel.webview.postMessage({type: 'length', value: rsmLength});
 
   // Start updates
   startMonitor(pid);
@@ -49,48 +49,44 @@ class PyDebugAdapterTracker implements vscode.DebugAdapterTracker {
 
   onDidSendMessage(message: any): void {
     // Python ("python" "launch")
-    // On (by my testing) seq:9 of messages, we get a message that includes the process.
-    if (message.type === "event" && message.event === "process") {
+    // On (by my testing) seq:9 of messages, we get a message that includes
+    // the process.
+    if (message.type === 'event' && message.event === 'process') {
       launchWebview(this.context, message.body.systemProcessId);
     }
   }
 }
 
-class PyDebugAdapterTrackerFactory
-  implements vscode.DebugAdapterTrackerFactory {
+class PyDebugAdapterTrackerFactory implements
+    vscode.DebugAdapterTrackerFactory {
   context: vscode.ExtensionContext;
   constructor(context: vscode.ExtensionContext) {
     this.context = context;
   }
-  createDebugAdapterTracker(
-    session: vscode.DebugSession
-  ): vscode.ProviderResult<vscode.DebugAdapterTracker> {
+  createDebugAdapterTracker(session: vscode.DebugSession):
+      vscode.ProviderResult<vscode.DebugAdapterTracker> {
     return new PyDebugAdapterTracker(this.context);
   }
 }
 
 export function activate(context: vscode.ExtensionContext) {
-  console.log("Extension Python Resource Monitor activated.");
+  console.log('Extension Python Resource Monitor activated.');
   // Commands
   // Polling interval change
-  context.subscriptions.push(
-    vscode.commands.registerCommand(
-      "python-resource-monitor.rsmInterval",
-      () => {
+  context.subscriptions.push(vscode.commands.registerCommand(
+      'python-resource-monitor.rsmInterval', () => {
         let intervalbox = vscode.window.createInputBox();
-        intervalbox.title = "Resource Monitor Polling Interval";
-        intervalbox.placeholder = "100";
+        intervalbox.title = 'Resource Monitor Polling Interval';
+        intervalbox.placeholder = '100';
         // Validation
         intervalbox.onDidChangeValue((e) => {
           let num: number = parseInt(e);
           if (isNaN(num)) {
             intervalbox.validationMessage =
-              "Input must be a valid integer number of milliseconds.";
+                'Input must be a valid integer number of milliseconds.';
           } else if (num < 1) {
             intervalbox.validationMessage =
-              "Input must be a positive number of milliseconds.";
-          } else {
-            intervalbox.validationMessage = undefined;
+                'Input must be a positive number of milliseconds.';
           }
         });
         // Handle accept
@@ -98,115 +94,101 @@ export function activate(context: vscode.ExtensionContext) {
           let num = parseInt(intervalbox.value);
           if (isNaN(num)) {
             vscode.window.showErrorMessage(
-              "Invalid value entered for polling interval."
-            );
+                'Invalid value entered for polling interval.');
           } else if (num < 1) {
             vscode.window.showErrorMessage(
-              "Polling interval must be at least 1ms."
-            );
+                'Polling interval must be at least 1ms.');
           } else {
             pollingInterval = num;
-            vscode.window.showInformationMessage(
-              `Set polling interval to ${num}ms. This will take effect when a new resource monitor is opened.`
-            );
+            vscode.window.showInformationMessage(`Set polling interval to ${
+                num}ms. This will take effect when a new resource monitor is opened.`);
             intervalbox.dispose();
           }
         });
         intervalbox.show();
-      }
-    )
-  );
+      }));
 
   // Maximum time log length
-  context.subscriptions.push(
-    vscode.commands.registerCommand("python-resource-monitor.rsmLength", () => {
-      var lengthbox = vscode.window.createInputBox();
-      lengthbox.title = "Resource Monitor Length";
-      lengthbox.placeholder = "0";
-      lengthbox.prompt = "0 is unlimited log length.";
-      // Validation
-      lengthbox.onDidChangeValue((e) => {
-        let num: number = parseInt(e);
-        if (isNaN(num)) {
-          lengthbox.validationMessage =
-            "Input must be a valid integer number of milliseconds.";
-        } else {
-          lengthbox.validationMessage = undefined;
-        }
-      });
-      // Handle accept
-      lengthbox.onDidAccept((e) => {
-        let num = parseInt(lengthbox.value);
-        if (isNaN(num)) {
-          vscode.window.showErrorMessage(
-            "Invalid value entered for polling interval."
-          );
-        } else if (num < 1) {
-          // If it is less than 1, we have infinite. Set to 0.
-          rsmLength = 0;
-          try {
-            panel.webview.postMessage({ type: "length", value: 0 }).then(
-              () => {
-                // On success
-                vscode.window.showInformationMessage(
-                  "Successfully set resource monitor length to unlimited."
-                );
-              },
-              () => {
-                // On failure
-                vscode.window.showErrorMessage(
-                  "Failed to change running resource monitor length. Has it been closed? Change will take effect on next start."
-                );
-              }
-            );
-          } catch {
-            // There is no webview panel
-            vscode.window.showInformationMessage(
-              "Set resource monitor length to unlimited. This will take effect when a new resource monitor is opened."
-            );
+  context.subscriptions.push(vscode.commands.registerCommand(
+      'python-resource-monitor.rsmLength', () => {
+        var lengthbox = vscode.window.createInputBox();
+        lengthbox.title = 'Resource Monitor Length';
+        lengthbox.placeholder = '0';
+        lengthbox.prompt = '0 is unlimited log length.';
+        // Validation
+        lengthbox.onDidChangeValue((e) => {
+          let num: number = parseInt(e);
+          if (isNaN(num)) {
+            lengthbox.validationMessage =
+                'Input must be a valid integer number of milliseconds.';
+          } else {
+            lengthbox.validationMessage = undefined;
           }
-          lengthbox.dispose();
-        } else {
-          // Set it to whatever they entered.
-          rsmLength = num;
-          try {
-            panel.webview.postMessage({ type: "length", value: num }).then(
-              () => {
-                // On success
-                vscode.window.showInformationMessage(
-                  `Successfully set resource monitor length to ${num}ms.`
-                );
-              },
-              () => {
-                // On failure
-                vscode.window.showErrorMessage(
-                  "Failed to change running resource monitor length. Has it been closed? Change will take effect on next start."
-                );
-              }
-            );
-          } catch {
-            // There is no webview panel
-            vscode.window.showInformationMessage(
-              `Set resource monitor length to ${num}ms. This will take effect when a new resource monitor is opened.`
-            );
+        });
+        // Handle accept
+        lengthbox.onDidAccept((e) => {
+          let num = parseInt(lengthbox.value);
+          if (isNaN(num)) {
+            vscode.window.showErrorMessage(
+                'Invalid value entered for polling interval.');
+          } else if (num < 1) {
+            // If it is less than 1, we have infinite. Set to 0.
+            rsmLength = 0;
+            try {
+              panel.webview.postMessage({type: 'length', value: 0})
+                  .then(
+                      () => {
+                        // On success
+                        vscode.window.showInformationMessage(
+                            'Successfully set resource monitor length to unlimited.');
+                      },
+                      () => {
+                        // On failure
+                        vscode.window.showErrorMessage(
+                            'Failed to change running resource monitor length. Has it been closed? Change will take effect on next start.');
+                      });
+            } catch {
+              // There is no webview panel
+              vscode.window.showInformationMessage(
+                  'Set resource monitor length to unlimited. This will take effect when a new resource monitor is opened.');
+            }
+            lengthbox.dispose();
+          } else {
+            // Set it to whatever they entered.
+            rsmLength = num;
+            try {
+              panel.webview.postMessage({type: 'length', value: num})
+                  .then(
+                      () => {
+                        // On success
+                        vscode.window.showInformationMessage(
+                            `Successfully set resource monitor length to ${
+                                num}ms.`);
+                      },
+                      () => {
+                        // On failure
+                        vscode.window.showErrorMessage(
+                            'Failed to change running resource monitor length. Has it been closed? Change will take effect on next start.');
+                      });
+            } catch {
+              // There is no webview panel
+              vscode.window.showInformationMessage(`Set resource monitor length to ${
+                  num}ms. This will take effect when a new resource monitor is opened.`);
+            }
+            lengthbox.dispose();
           }
-          lengthbox.dispose();
-        }
-      });
-      lengthbox.show();
-    })
-  );
+        });
+        lengthbox.show();
+      }));
 
-  // Instead of just getting the debug start event, we now use an adapter tracker.
-  // This also makes sure that we only get python debugs
+  // Instead of just getting the debug start event, we now use an adapter
+  // tracker. This also makes sure that we only get python debugs
   vscode.debug.registerDebugAdapterTrackerFactory(
-    "python",
-    new PyDebugAdapterTrackerFactory(context)
-  );
+      'python', new PyDebugAdapterTrackerFactory(context));
   // vscode.debug.onDidStartDebugSession((e) => {});
 
   vscode.debug.onDidTerminateDebugSession(() => {
-    console.log("Stopping resource monitor.");
+    console.log('Stopping resource monitor.');
   });
 }
 
@@ -216,19 +198,17 @@ export function activate(context: vscode.ExtensionContext) {
  * @param time Timestamp for the data value.
  * @param value Value of data.
  */
-function postData(key: "memdata" | "cpudata" | "readdata" | "writedata", time: number, value: number) {
+function postData(
+    key: 'memdata'|'cpudata'|'readdata'|'writedata', time: number,
+    value: number) {
   try {
-    // Make sure to catch promise rejections (when the webview has been closed but a message is still posted) with .then()
-    panel.webview
-      .postMessage({ type: key, time: time, value: value })
-      .then(
-        () => { },
-        () => { }
-      );
+    // Make sure to catch promise rejections (when the webview has been
+    // closed but a message is still posted) with .then()
+    panel.webview.postMessage({type: key, time: time, value: value})
+        .then(() => {}, () => {});
   } catch {
     console.error(
-      "Webview post failed. May be due to process interval not yet being closed."
-    );
+        'Webview post failed. May be due to process interval not yet being closed.');
   }
 }
 
@@ -246,10 +226,10 @@ function getData(pid: number) {
   let write = ps.fileWrite(pid);
   let timewrite = Date.now();
   // Send data to webview
-  postData("memdata", timemem, mem);
-  postData("cpudata", timecpu, cpu);
-  postData("readdata", timeread, read);
-  postData("writedata", timewrite, write);
+  postData('memdata', timemem, mem);
+  postData('cpudata', timecpu, cpu);
+  postData('readdata', timeread, read);
+  postData('writedata', timewrite, write);
 }
 
 /**
