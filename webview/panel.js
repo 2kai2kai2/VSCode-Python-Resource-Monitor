@@ -56,11 +56,17 @@ function timeUnits(millis) {
  */
 function memUnits(bytes) {
   if (bytes >= 1024 ** 3) {
-    return Math.ceil(bytes / 1024 ** 3) + 'gb';
+    let gb = bytes / (1024 ** 3);
+    gb = gb <= 9.9 ? Math.ceil(gb * 10) / 10 : Math.ceil(gb);
+    return gb + 'gb';
   } else if (bytes >= 1024 ** 2) {
-    return Math.ceil(bytes / 1024 ** 2) + 'mb';
+    let mb = bytes / (1024 ** 2);
+    mb = mb <= 9.9 ? Math.ceil(mb * 10) / 10 : Math.ceil(mb);
+    return mb + 'mb';
   } else if (bytes >= 1024) {
-    return Math.ceil(bytes / 1024) + 'kb';
+    let kb = bytes / 1024;
+    kb = kb <= 9.9 ? Math.ceil(kb * 10) / 10 : Math.ceil(kb);
+    return kb + 'kb';
   } else {
     return bytes + 'b';
   }
@@ -247,8 +253,8 @@ function updateMem() {
   let memticks = 4;
   // Make the tick interval be the next power of 2 (4kb, 8kb, ..., 64kb, ...,
   // 1mb, ..., 1gb)
-  let interval = 2 ** Math.ceil(Math.log2(maxMem / memticks));
-  maxMem = Math.ceil(maxMem / interval) * interval;
+  maxMem = 2 ** Math.ceil(Math.log2(maxMem));
+  let interval = maxMem / memticks;
   updateGraph(
       memCanvas, minTime, maxTime, 10, timeUnits, 0, maxMem, memticks, memUnits,
       [{points: memory, color: themeGreen}]);
