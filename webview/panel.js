@@ -230,16 +230,10 @@ function updateMem() {
   let maxTime = 0;
   memory.forEach((value, key) => {
     // Get bounds for memory; minimum is always 0
-    if (value > maxMem) {
-      maxMem = value;
-    }
+    maxMem = Math.max(maxMem, value);
     // Get bounds for time
-    if (key > maxTime) {
-      maxTime = key;
-    }
-    if (key < minTime) {
-      minTime = key;
-    }
+    maxTime = Math.max(maxTime, key);
+    minTime = Math.min(minTime, key);
   });
   if (length !== 0) {
     minTime = maxTime - length;
@@ -300,16 +294,10 @@ function updateFileIO() {
   let maxTime = 0;
   let findmax = (value, key) => {
     // Get bounds for fileio; minimum is always 0
-    if (value > maxFile) {
-      maxFile = value;
-    }
+    maxFile = Math.max(maxFile, value);
     // Get bounds for time
-    if (key > maxTime) {
-      maxTime = key;
-    }
-    if (key < minTime) {
-      minTime = key;
-    }
+    maxTime = Math.max(maxTime, key);
+    minTime = Math.min(minTime, key);
   };
   fileread.forEach(findmax);
   filewrite.forEach(findmax);

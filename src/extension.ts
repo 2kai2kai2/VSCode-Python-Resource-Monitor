@@ -7,6 +7,8 @@ var panel: vscode.WebviewPanel;
 var pollingInterval = 100;
 var rsmLength = 10000;
 
+function nop() {}
+
 /**
  * Creates and starts a new Webview resource monitor.
  * @param context The VS Code Extension Context from which to launch the
@@ -121,8 +123,6 @@ export function activate(context: vscode.ExtensionContext) {
           if (isNaN(num)) {
             lengthbox.validationMessage =
                 'Input must be a valid integer number of milliseconds.';
-          } else {
-            lengthbox.validationMessage = undefined;
           }
         });
         // Handle accept
@@ -205,7 +205,7 @@ function postData(
     // Make sure to catch promise rejections (when the webview has been
     // closed but a message is still posted) with .then()
     panel.webview.postMessage({type: key, time: time, value: value})
-        .then(() => {}, () => {});
+        .then(nop, nop);
   } catch {
     console.error(
         'Webview post failed. May be due to process interval not yet being closed.');
