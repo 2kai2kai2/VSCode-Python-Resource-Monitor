@@ -131,52 +131,30 @@ export function activate(context: vscode.ExtensionContext) {
           if (isNaN(num)) {
             vscode.window.showErrorMessage(
                 'Invalid value entered for polling interval.');
-          } else if (num < 1) {
-            // If it is less than 1, we have infinite. Set to 0.
-            rsmLength = 0;
-            try {
-              panel.webview.postMessage({type: 'length', value: 0})
-                  .then(
-                      () => {
-                        // On success
-                        vscode.window.showInformationMessage(
-                            'Successfully set resource monitor length to unlimited.');
-                      },
-                      () => {
-                        // On failure
-                        vscode.window.showErrorMessage(
-                            'Failed to change running resource monitor length. Has it been closed? Change will take effect on next start.');
-                      });
-            } catch {
-              // There is no webview panel
-              vscode.window.showInformationMessage(
-                  'Set resource monitor length to unlimited. This will take effect when a new resource monitor is opened.');
-            }
-            lengthbox.dispose();
-          } else {
-            // Set it to whatever they entered.
-            rsmLength = num;
-            try {
-              panel.webview.postMessage({type: 'length', value: num})
-                  .then(
-                      () => {
-                        // On success
-                        vscode.window.showInformationMessage(
-                            `Successfully set resource monitor length to ${
-                                num}ms.`);
-                      },
-                      () => {
-                        // On failure
-                        vscode.window.showErrorMessage(
-                            'Failed to change running resource monitor length. Has it been closed? Change will take effect on next start.');
-                      });
-            } catch {
-              // There is no webview panel
-              vscode.window.showInformationMessage(`Set resource monitor length to ${
-                  num}ms. This will take effect when a new resource monitor is opened.`);
-            }
-            lengthbox.dispose();
+            return;
           }
+          rsmLength = Math.max(0, num);  // Less than 1 is treated as unlimited.
+          let rsmLengthRepr = rsmLength === 0 ? 'unlimited' : `${rsmLength}ms`;
+          try {
+            panel.webview.postMessage({type: 'length', value: num})
+                .then(
+                    () => {
+                      // On success
+                      vscode.window.showInformationMessage(
+                          `Successfully set resource monitor length to ${
+                              rsmLengthRepr}.`);
+                    },
+                    () => {
+                      // On failure
+                      vscode.window.showErrorMessage(
+                          'Failed to change running resource monitor length. Has it been closed? Change will take effect on next start.');
+                    });
+          } catch {
+            // There is no webview panel
+            vscode.window.showInformationMessage(`Set resource monitor length to ${
+                rsmLengthRepr}. This will take effect when a new resource monitor is opened.`);
+          }
+          lengthbox.dispose();
         });
         lengthbox.show();
       }));
