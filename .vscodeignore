@@ -2,6 +2,7 @@
 .vscode-test/**
 out/test/**
 test_docs/**
+node_modules/**
 
 src/**
 .gitignore
@@ -11,3 +12,4 @@ vsc-extension-quickstart.md
 **/.eslintrc.json
 **/*.map
 **/*.ts
+**/*.vsix
