@@ -22,7 +22,7 @@ async function launchWebview(context: vscode.ExtensionContext, pid: number) {
     }
     // Create the webview
     panel = vscode.window.createWebviewPanel('resourceMonitor', 'Resource Monitor', vscode.ViewColumn.Beside,
-                                             {enableScripts : true});
+                                             {enableScripts: true});
     // Set page
     let paneljs = panel.webview.asWebviewUri(vscode.Uri.file(join(context.extensionPath, 'webview', 'panel.js')));
 
@@ -31,7 +31,7 @@ async function launchWebview(context: vscode.ExtensionContext, pid: number) {
     htmlText = htmlText.replace('${paneljs}', paneljs.toString());
     panel.webview.html = htmlText;
 
-    panel.webview.postMessage({type : 'length', value : rsmLength});
+    panel.webview.postMessage({type: 'length', value: rsmLength});
 
     // Start updates
     startMonitor(pid);
@@ -116,7 +116,7 @@ export function activate(context: vscode.ExtensionContext) {
             rsmLength = Math.max(0, num); // Less than 1 is treated as unlimited.
             let rsmLengthRepr = rsmLength === 0 ? 'unlimited' : `${rsmLength}ms`;
             try {
-                panel.webview.postMessage({type : 'length', value : num})
+                panel.webview.postMessage({type: 'length', value: num})
                     .then(
                         () => { // On success
                             vscode.window.showInformationMessage(
@@ -153,7 +153,7 @@ function postData(key: 'memdata'|'cpudata'|'readdata'|'writedata', time: number,
     try {
         // Make sure to catch promise rejections (when the webview has been closed but a message is still posted) with
         // .then()
-        panel.webview.postMessage({type : key, time : time, value : value}).then(nop, nop);
+        panel.webview.postMessage({type: key, time: time, value: value}).then(nop, nop);
     } catch {
         console.error('Webview post failed. May be due to process interval not yet being closed.');
     }

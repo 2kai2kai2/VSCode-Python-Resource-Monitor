@@ -78,29 +78,48 @@ function memUnits(bytes) {
 function cpuUnits(cputime) { return Math.ceil(cputime * 100) / 100 + '%'; }
 
 /**
+ * @typedef {Object} Axis
+ * @property {number} min Minimum shown value. All lower values will be drawn at this value.
+ * @property {number} max Maximum show value. All higher values will be drawn at this value.
+ * @property {number} ticks Number of ticks to include, including the beginning but excluding the end.
+ * @property {function(number): string} unitFunc The function for formatting tick labels on the axis.
+ */
+
+/**
+ * @param {number} min
+ * @param {number} max
+ * @returns {Axis}
+ */
+function timeAxis(min, max) { return {min: min, max: max, ticks: 10, unitFunc: timeUnits}; }
+/**
+ * @param {number} max
+ * @returns {Axis}
+ */
+function cpuAxis(max) { return {min: 0, max: max, ticks: 5, unitFunc: cpuUnits}; }
+/**
+ * @param {number} max
+ * @returns {Axis}
+ */
+function memAxis(max) { return {min: 0, max: max, ticks: 4, unitFunc: memUnits}; }
+
+/**
  * Updates a graph on a specified canvas.
  * @param {HTMLCanvasElement} canvas The canvas to draw the graph on.
- * @param {number} minX Minimum X-axis value. All lower values will be drawn at this value.
- * @param {number} maxX Maximum X-axis value. All higher values will be drawn at this value.
- * @param {number} ticksX Number of ticks to include on the X-axis, including the beginning but excluding the end.
- * @param {function(number): string} unitFuncX The function for formatting tick marks on the X-axis.
- * @param {number} minY Minimum Y-axis value. All lower values will be drawn at this value.
- * @param {number} maxY Maximum Y-axis value. All higher values will be drawn at this value.
- * @param {number} ticksY Number of ticks to include on the Y-axis, including the beginning but excluding the end.
- * @param {function(number): string} unitFuncY The function for formatting tick marks on the Y-axis.
+ * @param {Axis} axisX X-axis details
+ * @param {Axis} axisY Y-axis details
  * @param {Array<Object>} data Array of objects with information about each line to graph.
  * - `points: Map<number, number>` `(required)` Mapping of (x, y) coordinates to display.
  * - `color: string` `(required)` Style for {@link CanvasRenderingContext2D}`.strokeStyle`
  */
-function updateGraph(canvas, minX, maxX, ticksX, unitFuncX, minY, maxY, ticksY, unitFuncY, data) {
-    let rangeY = maxY - minY;
-    let rangeX = maxX - minX;
+function updateGraph(canvas, axisX, axisY, data) {
+    let rangeY = axisY.max - axisY.min;
+    let rangeX = axisX.max - axisX.min;
 
     // Decide on tick marks (this may eventually be scalable/zoomable)
     /** Memory usage/CPU time/etc. interval */
-    let intervalY = rangeY / ticksY;
+    let intervalY = rangeY / axisY.ticks;
     /** Time interval */
-    let intervalX = rangeX / ticksX;
+    let intervalX = rangeX / axisX.ticks;
 
     const marginL = 48;
     const marginR = 20;
@@ -123,14 +142,14 @@ function updateGraph(canvas, minX, maxX, ticksX, unitFuncX, minY, maxY, ticksY, 
      * @returns {number} The X location on the {@link canvas} that the data corresponds to.
      */
     function canvasX(graphX) {
-        return Math.min(graphRight, Math.max(marginL, marginL + graphWidth * ((graphX - minX) / rangeX)));
+        return Math.min(graphRight, Math.max(marginL, marginL + graphWidth * ((graphX - axisX.min) / rangeX)));
     }
     /**
      * @param {number} graphY An Y data value from the graph.
      * @returns {number} The Y location on the {@link canvas} that the data corresponds to.
      */
     function canvasY(graphY) {
-        return Math.min(graphBottom, Math.max(marginTop, graphBottom - graphHeight * ((graphY - minY) / rangeY)));
+        return Math.min(graphBottom, Math.max(marginTop, graphBottom - graphHeight * ((graphY - axisY.min) / rangeY)));
     }
     // Draw graph background
     let context = canvas.getContext('2d');
@@ -142,21 +161,21 @@ function updateGraph(canvas, minX, maxX, ticksX, unitFuncX, minY, maxY, ticksY, 
     context.beginPath();
     // X axis
     context.textAlign = 'center';
-    for (let ticknum = 0; ticknum <= ticksX; ticknum++) {
-        let graphX = maxX - intervalX * ticknum;
+    for (let ticknum = 0; ticknum <= axisX.ticks; ticknum++) {
+        let graphX = axisX.max - intervalX * ticknum;
         let cX = canvasX(graphX);
         context.moveTo(cX, graphBottom);
         context.lineTo(cX, marginTop);
-        context.fillText('-' + unitFuncX(maxX - graphX), cX, graphBottom + 12);
+        context.fillText('-' + axisX.unitFunc(axisX.max - graphX), cX, graphBottom + 12);
     }
     // Y axis
     context.textAlign = 'right';
-    for (let ticknum = 0; ticknum <= ticksY; ticknum++) {
+    for (let ticknum = 0; ticknum <= axisY.ticks; ticknum++) {
         let graphY = intervalY * ticknum;
         let cY = canvasY(graphY);
         context.moveTo(marginL, cY);
         context.lineTo(graphRight, cY);
-        context.fillText(unitFuncY(graphY), marginL - 2, cY);
+        context.fillText(axisY.unitFunc(graphY), marginL - 2, cY);
     }
     context.stroke();
 
@@ -213,12 +232,9 @@ function updateMem() {
             }
         });
     }
-    let memticks = 4;
     // Make the tick interval be the next power of 2 (4kb, 8kb, ..., 64kb, ..., 1mb, ..., 1gb)
     maxMem = 2 ** Math.ceil(Math.log2(maxMem));
-    let interval = maxMem / memticks;
-    updateGraph(memCanvas, minTime, maxTime, 10, timeUnits, 0, maxMem, memticks, memUnits,
-                [ {points : memory, color : themeGreen} ]);
+    updateGraph(memCanvas, timeAxis(minTime, maxTime), memAxis(maxMem), [{points: memory, color: themeGreen}]);
 }
 
 /**
@@ -244,8 +260,9 @@ function updateCpu() {
             }
         });
     }
-    updateGraph(cpuCanvas, minTime, maxTime, 10, timeUnits, 0, maxCpu, 5, cpuUnits,
-                [ {points : cpu, color : themeGreen} ]);
+    maxCpu = Math.ceil(maxCpu / 20) * 20;
+    maxCpu = Math.max(maxCpu, 20);
+    updateGraph(cpuCanvas, timeAxis(minTime, maxTime), cpuAxis(maxCpu), [{points: cpu, color: themeGreen}]);
 }
 
 function updateFileIO() {
@@ -272,8 +289,8 @@ function updateFileIO() {
         fileread.forEach(prune);
         filewrite.forEach(prune);
     }
-    updateGraph(fileCanvas, minTime, maxTime, 10, timeUnits, 0, maxFile, 5, memUnits,
-                [ {points : filewrite, color : themeCyan}, {points : fileread, color : themeGreen} ]);
+    updateGraph(fileCanvas, timeAxis(minTime, maxTime), memAxis(maxFile),
+                [{points: filewrite, color: themeCyan}, {points: fileread, color: themeGreen}]);
 }
 
 var lastcputime = -1;
