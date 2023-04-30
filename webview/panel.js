@@ -3,7 +3,11 @@ const memCanvas = document.getElementById('memory');
 /** @type {HTMLCanvasElement} */
 const cpuCanvas = document.getElementById('cpu');
 /** @type {HTMLCanvasElement} */
-const fileCanvas = document.getElementById('fileio');
+const fileReadCanvas = document.getElementById('fileread');
+/** @type {HTMLCanvasElement} */
+const fileWriteCanvas = document.getElementById('filewrite');
+/** @type {HTMLDivElement} */
+const pidsDiv = document.getElementById('pids');
 
 /** @type {CSSStyleDeclaration} */
 const style = getComputedStyle(document.body);
@@ -16,15 +20,46 @@ const themeGrey = style.getPropertyValue('--vscode-terminal-ansiBrightBlack');
 const themeGreen = style.getPropertyValue('--vscode-terminal-ansiGreen');
 /** @type {string} */
 const themeCyan = style.getPropertyValue('--vscode-terminal-ansiCyan');
+/** @type {string[]} */
+const colors = [
+    style.getPropertyValue('--vscode-terminal-ansiGreen'),
+    style.getPropertyValue('--vscode-terminal-ansiCyan'),
+    style.getPropertyValue('--vscode-terminal-ansiBlue'),
+    style.getPropertyValue('--vscode-terminal-ansiMagenta'),
+    style.getPropertyValue('--vscode-terminal-ansiRed'),
+    style.getPropertyValue('--vscode-terminal-ansiYellow'),
+    style.getPropertyValue('--vscode-terminal-ansiBrightGreen'),
+    style.getPropertyValue('--vscode-terminal-ansiBrightCyan'),
+    style.getPropertyValue('--vscode-terminal-ansiBrightBlue'),
+    style.getPropertyValue('--vscode-terminal-ansiBrightMagenta'),
+    style.getPropertyValue('--vscode-terminal-ansiBrightRed'),
+    style.getPropertyValue('--vscode-terminal-ansiBrightYellow')
+];
 
-/** @type {Map<number, number>} */
-var memory = new Map();
-/** @type {Map<number, number>} */
-var cpu = new Map();
-/** @type {Map<number, number>} */
-var fileread = new Map();
-/** @type {Map<number, number>} */
-var filewrite = new Map();
+class PidMonitor {
+    constructor(pid) {
+        /** @type {Map<number, number>} */
+        this.memory = new Map();
+        /** @type {Map<number, number>} */
+        this.cpu = new Map();
+        /** @type {Map<number, number>} */
+        this.fileread = new Map();
+        /** @type {Map<number, number>} */
+        this.filewrite = new Map();
+
+        this.lastcputime = -1;
+        this.lastcpu = -1;
+        this.lastfileread = -1;
+        this.lastfilewrite = -1;
+
+        // Pick the next color from the list of colors
+        const nextColorIndex = pids.size % colors.length === 0 ? 0 : pids.size;
+        this.color = colors[nextColorIndex];
+    }
+}
+
+/** @type {Map<number, PidMonitor>} */
+var pids = new Map();
 
 /** Length in milliseconds to keep in logs. */
 var length = 0;
@@ -88,11 +123,9 @@ function cpuUnits(cputime) { return Math.ceil(cputime * 100) / 100 + '%'; }
  * @param {number} maxY Maximum Y-axis value. All higher values will be drawn at this value.
  * @param {number} ticksY Number of ticks to include on the Y-axis, including the beginning but excluding the end.
  * @param {function(number): string} unitFuncY The function for formatting tick marks on the Y-axis.
- * @param {Array<Object>} data Array of objects with information about each line to graph.
- * - `points: Map<number, number>` `(required)` Mapping of (x, y) coordinates to display.
- * - `color: string` `(required)` Style for {@link CanvasRenderingContext2D}`.strokeStyle`
+ * @param {string[]} types The name of the type you want to plot, e.g. cpu, memory, filewrite, fileread.
  */
-function updateGraph(canvas, minX, maxX, ticksX, unitFuncX, minY, maxY, ticksY, unitFuncY, data) {
+function updateGraph(canvas, minX, maxX, ticksX, unitFuncX, minY, maxY, ticksY, unitFuncY, type) {
     let rangeY = maxY - minY;
     let rangeX = maxX - minX;
 
@@ -171,13 +204,15 @@ function updateGraph(canvas, minX, maxX, ticksX, unitFuncX, minY, maxY, ticksY, 
 
     // Draw lines
     context.lineWidth = 2;
-    data.forEach((lineobj) => {
-        /** @type {Map<number, number>} */
-        let linedata = lineobj.points;
-        context.strokeStyle = lineobj.color;
-        context.beginPath();
+
+    pids.forEach(pidMonitor => {
+        // Draw the given "type" (cpu, memory, fileread, filewrite)
+        data = pidMonitor[type];
         let first = true;
-        linedata.forEach((value, key) => {
+
+        context.strokeStyle = pidMonitor.color;
+        context.beginPath();
+        data.forEach((value, key) => {
             if (first) {
                 context.moveTo(canvasX(key), canvasY(value));
                 first = false;
@@ -197,28 +232,29 @@ function updateMem() {
     let maxMem = 0;
     let minTime = Number.MAX_SAFE_INTEGER;
     let maxTime = 0;
-    memory.forEach((value, key) => {
-        // Get bounds for memory; minimum is always 0
-        maxMem = Math.max(maxMem, value);
-        // Get bounds for time
-        maxTime = Math.max(maxTime, key);
-        minTime = Math.min(minTime, key);
-    });
-    if (length !== 0) {
-        minTime = maxTime - length;
-        // Prune
-        memory.forEach((value, key) => {
-            if (key < minTime) {
-                memory.delete(key);
-            }
+    pids.forEach((pidMonitor, pid) => {
+        pidMonitor.memory.forEach((value, key) => {
+            // Get bounds for memory; minimum is always 0
+            maxMem = Math.max(maxMem, value);
+            // Get bounds for time
+            maxTime = Math.max(maxTime, key);
+            minTime = Math.min(minTime, key);
         });
-    }
+        if (length !== 0) {
+            minTime = maxTime - length;
+            // Prune
+            pidMonitor.memory.forEach((value, key) => {
+                if (key < minTime) {
+                    pidMonitor.memory.delete(key);
+                }
+            });
+        }
+    });
     let memticks = 4;
     // Make the tick interval be the next power of 2 (4kb, 8kb, ..., 64kb, ..., 1mb, ..., 1gb)
     maxMem = 2 ** Math.ceil(Math.log2(maxMem));
     let interval = maxMem / memticks;
-    updateGraph(memCanvas, minTime, maxTime, 10, timeUnits, 0, maxMem, memticks, memUnits,
-                [ {points : memory, color : themeGreen} ]);
+    updateGraph(memCanvas, minTime, maxTime, 10, timeUnits, 0, maxMem, memticks, memUnits, 'memory');
 }
 
 /**
@@ -228,27 +264,29 @@ function updateCpu() {
     let maxCpu = 0;
     let minTime = Number.MAX_SAFE_INTEGER;
     let maxTime = 0;
-    cpu.forEach((value, key) => {
-        // Get bounds for cpu; minimum is always 0
-        maxCpu = Math.max(maxCpu, value);
-        // Get bounds for time
-        maxTime = Math.max(maxTime, key);
-        minTime = Math.min(minTime, key);
-    });
-    if (length !== 0) {
-        minTime = maxTime - length;
-        // Prune data older than minTime
-        cpu.forEach((value, key) => {
-            if (key < minTime) {
-                cpu.delete(key);
-            }
+
+    pids.forEach((pidMonitor, pid) => {
+        pidMonitor.cpu.forEach((value, key) => {
+            // Get bounds for cpu; minimum is always 0
+            maxCpu = Math.max(maxCpu, value);
+            // Get bounds for time
+            maxTime = Math.max(maxTime, key);
+            minTime = Math.min(minTime, key);
         });
-    }
-    updateGraph(cpuCanvas, minTime, maxTime, 10, timeUnits, 0, maxCpu, 5, cpuUnits,
-                [ {points : cpu, color : themeGreen} ]);
+        if (length !== 0) {
+            minTime = maxTime - length;
+            // Prune data older than minTime
+            pidMonitor.cpu.forEach((value, key) => {
+                if (key < minTime) {
+                    pidMonitor.cpu.delete(key);
+                }
+            });
+        }
+    });
+    updateGraph(cpuCanvas, minTime, maxTime, 10, timeUnits, 0, maxCpu, 5, cpuUnits, 'cpu');
 }
 
-function updateFileIO() {
+function updateFileRead() {
     let maxFile = 0;
     let minTime = Number.MAX_SAFE_INTEGER;
     let maxTime = 0;
@@ -259,29 +297,54 @@ function updateFileIO() {
         maxTime = Math.max(maxTime, key);
         minTime = Math.min(minTime, key);
     };
-    fileread.forEach(findmax);
-    filewrite.forEach(findmax);
-    if (length !== 0) {
-        minTime = maxTime - length;
-        // Prune data older than minTime
-        let prune = (value, key, map) => {
-            if (key < minTime) {
-                map.delete(key);
-            }
-        };
-        fileread.forEach(prune);
-        filewrite.forEach(prune);
-    }
-    updateGraph(fileCanvas, minTime, maxTime, 10, timeUnits, 0, maxFile, 5, memUnits,
-                [ {points : filewrite, color : themeCyan}, {points : fileread, color : themeGreen} ]);
+
+    pids.forEach((pidMonitor, pid) => {
+        pidMonitor.fileread.forEach(findmax);
+        if (length !== 0) {
+            minTime = maxTime - length;
+            // Prune data older than minTime
+            let prune = (value, key, map) => {
+                if (key < minTime) {
+                    map.delete(key);
+                }
+            };
+            pidMonitor.fileread.forEach(prune);
+        }
+    });
+    updateGraph(fileReadCanvas, minTime, maxTime, 10, timeUnits, 0, maxFile, 5, memUnits, 'fileread');
 }
 
-var lastcputime = -1;
-var lastcpu = -1;
-var lastfileread = -1;
-var lastfilewrite = -1;
+function updateFileWrite() {
+    let maxFile = 0;
+    let minTime = Number.MAX_SAFE_INTEGER;
+    let maxTime = 0;
+    let findmax = (value, key) => {
+        // Get bounds for fileio; minimum is always 0
+        maxFile = Math.max(maxFile, value);
+        // Get bounds for time
+        maxTime = Math.max(maxTime, key);
+        minTime = Math.min(minTime, key);
+    };
+
+    pids.forEach((pidMonitor, pid) => {
+        pidMonitor.filewrite.forEach(findmax);
+        if (length !== 0) {
+            minTime = maxTime - length;
+            // Prune data older than minTime
+            let prune = (value, key, map) => {
+                if (key < minTime) {
+                    map.delete(key);
+                }
+            };
+            pidMonitor.filewrite.forEach(prune);
+        }
+    });
+    updateGraph(fileWriteCanvas, minTime, maxTime, 10, timeUnits, 0, maxFile, 5, memUnits, 'filewrite');
+}
 
 class Message {
+    /** @type {number|undefined} */
+    pid;
     /** @type {'memdata'|'cpudata'|'readdata'|'writedata'|'length'|'reset'} */
     type;
     /** @type {number|undefined} */
@@ -290,58 +353,94 @@ class Message {
     value;
 }
 
+/**
+ * Updates the pid div with new pids.
+ */
+function updatePidsDiv() {
+    const pidElements = [];
+    pids.forEach((pidMonitor, pid) => {
+        el = document.createElement('span');
+        el.style.color = pidMonitor.color;
+        el.innerText = `${pid} `;
+        pidElements.push(el);
+    });
+    pidsDiv.replaceChildren(...pidElements);
+}
+
+/**
+ * Finds or creates the PidMonitor for the given pid.
+ * @param {number} pid The pid that we are monitoring
+ * @returns {PidMonitor} The instance of PidMonitor that we use to store metrics.
+ */
+function getPidMonitor(pid) {
+    if (pid) {
+        let pidMonitor = pids.get(pid);
+        // New pid, add to the mapping to keep track
+        if (!pidMonitor) {
+            pids.set(pid, new PidMonitor());
+            pidMonitor = pids.get(pid);
+            updatePidsDiv();
+        }
+        return pidMonitor;
+    }
+    return null;
+}
+
 window.addEventListener('message', (e) => {
     /** @type {Message} */
     const data = e.data;
+    /** @type {PidMonitor} */
+    const pidMonitor = getPidMonitor(data.pid);
+
     switch (data.type) {
     case 'memdata':
-        memory.set(data.time, data.value);
+        pidMonitor.memory.set(data.time, data.value);
         updateMem();
         break;
     case 'cpudata':
-        if (lastcpu >= 0) {
+        if (pidMonitor.lastcpu >= 0) {
             /** In ms, the total amount of time since the last measurement */
-            let deltaT = data.time - lastcputime;
+            let deltaT = data.time - pidMonitor.lastcputime;
             /** In ms, the amount of CPU time used since the last measurement */
-            let deltaC = data.value - lastcpu;
-            cpu.set(data.time, (100.0 * deltaC) / deltaT);
+            let deltaC = data.value - pidMonitor.lastcpu;
+            pidMonitor.cpu.set(data.time, (100.0 * deltaC) / deltaT);
         }
-        lastcputime = data.time;
-        lastcpu = data.value;
+        pidMonitor.lastcputime = data.time;
+        pidMonitor.lastcpu = data.value;
         updateCpu();
         break;
     case 'readdata':
-        if (lastfileread >= 0) {
+        if (pidMonitor.lastfileread >= 0) {
             /** In bytes, the amount of file read performed since the last measurement */
-            let deltaR = data.value - lastfileread;
-            fileread.set(data.time, deltaR);
+            let deltaR = data.value - pidMonitor.lastfileread;
+            pidMonitor.fileread.set(data.time, deltaR);
         }
-        lastfileread = data.value;
-        // updateFileIO();
+        pidMonitor.lastfileread = data.value;
+        updateFileRead();
         break;
     case 'writedata':
-        if (lastfilewrite >= 0) {
+        if (pidMonitor.lastfilewrite >= 0) {
             // In bytes, the amount of file write performed since the last measurement
-            let deltaW = data.value - lastfilewrite;
-            filewrite.set(data.time, deltaW);
+            let deltaW = data.value - pidMonitor.lastfilewrite;
+            pidMonitor.filewrite.set(data.time, deltaW);
         }
-        lastfilewrite = data.value;
-        updateFileIO();
+        pidMonitor.lastfilewrite = data.value;
+        updateFileWrite();
         break;
     case 'length':
         length = data.value;
         updateMem();
         updateCpu();
-        updateFileIO();
+        updateFileRead();
+        updateFileWrite();
+        break;
         break;
     case 'reset':
-        cpu.clear();
-        updateCpu();
-        memory.clear();
+        pids.clear();
         updateMem();
-        fileread.clear();
-        filewrite.clear();
-        updateFileIO();
+        updateCpu();
+        updateFileRead();
+        updateFileWrite();
         break;
     default:
         // Discard
@@ -359,13 +458,16 @@ function resize() {
     memCanvas.height = memCanvas.parentElement.offsetWidth / 4;
     cpuCanvas.width = cpuCanvas.parentElement.offsetWidth - 20;
     cpuCanvas.height = cpuCanvas.parentElement.offsetWidth / 4;
-    fileCanvas.width = fileCanvas.parentElement.offsetWidth - 20;
-    fileCanvas.height = fileCanvas.parentElement.offsetWidth / 4;
+    fileReadCanvas.width = fileReadCanvas.parentElement.offsetWidth - 20;
+    fileReadCanvas.height = fileReadCanvas.parentElement.offsetWidth / 4;
+    fileWriteCanvas.width = fileWriteCanvas.parentElement.offsetWidth - 20;
+    fileWriteCanvas.height = fileWriteCanvas.parentElement.offsetWidth / 4;
 }
 window.addEventListener('resize', (e) => {
     resize();
     updateMem();
     updateCpu();
-    updateFileIO();
+    updateFileRead();
+    updateFileWrite();
 });
 resize();

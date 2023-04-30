@@ -7,6 +7,9 @@ var panel: vscode.WebviewPanel;
 var pollingInterval = 100;
 var rsmLength = 10000;
 
+var pidMonitors = new Map();
+var shouldResetPanel = false;
+
 function nop() {}
 
 /**
@@ -15,38 +18,59 @@ function nop() {}
  * @param pid The process ID to track with the resource monitor.
  */
 async function launchWebview(context: vscode.ExtensionContext, pid: number) {
-    // If a webview already exists, get rid of it.
-    try {
-        panel.dispose();
-    } catch {
+    // We want to reuse the panel for new processes in an existing debug session.
+    if (panel) {
+        if (!shouldResetPanel) {
+            return;
+        }
+
+        // Recreate the panel when starting a new debug session.
+        shouldResetPanel = false;
+        try {
+            panel.dispose();
+        } catch {
+        }
     }
     // Create the webview
     panel = vscode.window.createWebviewPanel('resourceMonitor', 'Resource Monitor', vscode.ViewColumn.Beside,
                                              {enableScripts : true});
+
+    // When removing the panel, stop all monitoring
+    panel.onDidDispose(() => {
+        stopMonitoring();
+        pidMonitors.clear();
+    });
+
     // Set page
     let paneljs = panel.webview.asWebviewUri(vscode.Uri.file(join(context.extensionPath, 'webview', 'panel.js')));
 
     var htmlText = fs.readFileSync(join(context.extensionPath, 'webview', 'panel.html')).toString();
-    htmlText = htmlText.replace('${pid}', pid.toString());
     htmlText = htmlText.replace('${paneljs}', paneljs.toString());
     panel.webview.html = htmlText;
 
     panel.webview.postMessage({type : 'length', value : rsmLength});
-
-    // Start updates
-    startMonitor(pid);
-    console.log(`Starting resource monitor for process ID ${pid}.`);
 }
 
 class PyDebugAdapterTracker implements vscode.DebugAdapterTracker {
     context: vscode.ExtensionContext;
     constructor(context: vscode.ExtensionContext) { this.context = context; }
 
+    // Handling start, stopped (paused) and continue events. Terminate events are handled per pid in onDidTerminateDebugSession.
     onDidSendMessage(message: any): void {
-        // Python ("python" "launch")
-        // On (by my testing) seq:9 of messages, we get a message that includes the process.
         if (message.type === 'event' && message.event === 'process') {
-            launchWebview(this.context, message.body.systemProcessId);
+            // New process spawned, start monitoring pid and open/reuse webview
+            const pid = message.body.systemProcessId;
+            launchWebview(this.context, pid);
+            startMonitor(pid);
+        } else if (message.type === 'event' && message.event === 'stopped') {
+            // Debugging is paused or breakpoint is reached, pause monitoring of all pids
+            stopMonitoring();
+        } else if (message.type === 'response' && message.command === 'continue') {
+            // Started debugging again after pause, resume monitoring known pids
+            for (let pid of pidMonitors.keys()) {
+                let updateInterval: NodeJS.Timer = setInterval(getData, pollingInterval, pid);
+                pidMonitors.set(pid, updateInterval);
+            }
         }
     }
 }
@@ -140,20 +164,37 @@ export function activate(context: vscode.ExtensionContext) {
     // get python debugs
     vscode.debug.registerDebugAdapterTrackerFactory('python', new PyDebugAdapterTrackerFactory(context));
 
-    vscode.debug.onDidTerminateDebugSession(() => { console.log('Stopping resource monitor.'); });
+    // Listen for termination events per process.
+    vscode.debug.onDidTerminateDebugSession((session: vscode.DebugSession) => {
+        if (session.parentSession) {
+            // If the process has a parent, it is a subprocess, stop monitoring this pid
+            const pid = session.configuration.subProcessId;
+            console.log('Stopping monitoring of pid', pid);
+            const interval = pidMonitors.get(pid);
+            clearInterval(interval);
+            pidMonitors.delete(pid);
+        } else {
+            // Main process stopped, stop monitoring everything and forget all pids.
+            console.log('Parent process stopped!');
+            stopMonitoring();
+            pidMonitors.clear();
+            shouldResetPanel = true;
+        }
+    });
 }
 
 /**
  * Send a datapoint to the Webview.
+ * @param pid The process id that gets monitored.
  * @param key The type of data to send.
  * @param time Timestamp for the data value.
  * @param value Value of data.
  */
-function postData(key: 'memdata'|'cpudata'|'readdata'|'writedata', time: number, value: number) {
+function postData(pid: number, key: 'memdata'|'cpudata'|'readdata'|'writedata', time: number, value: number) {
     try {
         // Make sure to catch promise rejections (when the webview has been closed but a message is still posted) with
         // .then()
-        panel.webview.postMessage({type : key, time : time, value : value}).then(nop, nop);
+        panel.webview.postMessage({pid : pid, type : key, time : time, value : value}).then(nop, nop);
     } catch {
         console.error('Webview post failed. May be due to process interval not yet being closed.');
     }
@@ -173,20 +214,28 @@ function getData(pid: number) {
     let write = ps.fileWrite(pid);
     let timewrite = Date.now();
     // Send data to webview
-    postData('memdata', timemem, mem);
-    postData('cpudata', timecpu, cpu);
-    postData('readdata', timeread, read);
-    postData('writedata', timewrite, write);
+    postData(pid, 'memdata', timemem, mem);
+    postData(pid, 'cpudata', timecpu, cpu);
+    postData(pid, 'readdata', timeread, read);
+    postData(pid, 'writedata', timewrite, write);
 }
 
 /**
- * Starts the monitor interval and initializes dispose events.
+ * Starts the monitor interval.
  * @param pid Process ID to monitor.
  */
 function startMonitor(pid: number) {
+    console.log(`Starting resource monitor for process ID ${pid}.`);
     let updateInterval: NodeJS.Timer = setInterval(getData, pollingInterval, pid);
-    panel.onDidDispose(() => { clearInterval(updateInterval); });
-    vscode.debug.onDidTerminateDebugSession(() => { clearInterval(updateInterval); });
+    pidMonitors.set(pid, updateInterval);
+}
+
+/**
+ * Stops monitoring all known pids.
+ */
+function stopMonitoring() {
+    console.log('Stopped monitoring pids', [...pidMonitors.keys()]);
+    pidMonitors.forEach(updateInterval => clearInterval(updateInterval));
 }
 
 export function deactivate() {
