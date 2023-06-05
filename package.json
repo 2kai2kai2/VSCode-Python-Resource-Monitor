@@ -2,7 +2,7 @@
     "name": "python-resource-monitor",
     "displayName": "Python Resource Monitor",
     "description": "A resource monitor for the Python Debugger",
-    "version": "0.2.1",
+    "version": "0.2.2",
     "publisher": "kaih2o",
     "contributors": [
         "2kai2kai2",

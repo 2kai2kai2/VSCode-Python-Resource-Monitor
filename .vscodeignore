@@ -3,6 +3,8 @@
 out/test/**
 test_docs/**
 node_modules/**
+!node_modules/node-ps-data
+!node_modules/node-gyp-build
 
 src/**
 .gitignore
