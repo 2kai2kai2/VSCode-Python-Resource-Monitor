@@ -10,7 +10,7 @@
 
   <body style="height: 100%; width: 100%; padding: 0;">
     <div id="container" style="margin-left: 10px;">
-      <h3>Process ID: ${pid}</h3>
+      <h3>Monitoring PID(s): <div id="pids"></div></h3>
       <h3 id="memtitle">Memory Usage</h3>
       <div style="width: 100%; max-height: 150px; margin: 0 auto;">
         <canvas id="memory" style="width: 100%; height: 100%;"></canvas>
@@ -19,10 +19,13 @@
       <div style="width: 100%; max-height: 150px; margin: 0 auto;">
         <canvas id="cpu" style="width: 100%; height: 100%;"></canvas>
       </div>
-      <h3 id="fileiotitle">File Usage</h3>
-      <p style="color: --vscode-terminal-ansiGreen">Read</p>
+      <h3 id="readtitle">Read Usage</h3>
       <div style="width: 100%; max-height: 150px; margin: 0 auto;">
-          <canvas id="fileio" style="width: 100%; height: 100%;"></canvas>
+        <canvas id="fileread" style="width: 100%; height: 100%;"></canvas>
+      </div>
+      <h3 id="writetitle">Write Usage</h3>
+      <div style="width: 100%; max-height: 150px; margin: 0 auto;">
+        <canvas id="filewrite" style="width: 100%; height: 100%;"></canvas>
       </div>
       <a href="https://www.patreon.com/bePatron?u=9073173">
         <img src="https://img.shields.io/badge/Patreon-donate-orange?logo=Patreon">
