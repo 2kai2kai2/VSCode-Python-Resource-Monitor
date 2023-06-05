@@ -38,8 +38,7 @@ _Test program storing strings of random sizes in memory_
 ## Known Issues and Future Updates
 
 - Hopefully, this will one day work for many languages and debuggers!
-- Not tested on MacOS.
-- I don't think it will work with the Python multiprocessing module quite yet.
+- Not fully tested on MacOS.
 - Response to mouseover of the graph.
 
 ## Recent Major Updates
@@ -59,3 +58,7 @@ Improved flexibility of displays.
 ### 0.2.0
 
 Added file IO data.
+
+### 0.2.1
+
+Added support for Python Multiprocessing

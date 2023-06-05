@@ -44,3 +44,8 @@ All notable changes to the Python Resource Monitor extension will be documented 
 
 ## 0.2.0 - Beta
 - Add file read and write data.
+
+## 0.2.1 - Beta
+- Force `node-ps-data` [v1.3.1](https://github.com/2kai2kai2/node-ps-data/releases/tag/v1.3.1) to avoid an installation bug.
+- Add support for [Multiprocessing](https://docs.python.org/3/library/multiprocessing.html) _(credit to [@mgrunbauer](https://github.com/2kai2kai2/VSCode-Python-Resource-Monitor/pull/8))_
+    - Split file read and file write data

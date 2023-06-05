@@ -2,10 +2,11 @@
     "name": "python-resource-monitor",
     "displayName": "Python Resource Monitor",
     "description": "A resource monitor for the Python Debugger",
-    "version": "0.2.0",
+    "version": "0.2.1",
     "publisher": "kaih2o",
     "contributors": [
         "2kai2kai2",
+        "mgrunbauer",
         "nlaha"
     ],
     "repository": "https://github.com/2kai2kai2/VSCode-Python-Resource-Monitor",
@@ -79,6 +80,6 @@
         "vscode-test": "^1.6.1"
     },
     "dependencies": {
-        "node-ps-data": "^1.3.0"
+        "node-ps-data": "^1.3.1"
     }
 }

@@ -33,7 +33,7 @@ async function launchWebview(context: vscode.ExtensionContext, pid: number) {
     }
     // Create the webview
     panel = vscode.window.createWebviewPanel('resourceMonitor', 'Resource Monitor', vscode.ViewColumn.Beside,
-                                             {enableScripts : true});
+                                             {enableScripts: true});
 
     // When removing the panel, stop all monitoring
     panel.onDidDispose(() => {
@@ -59,7 +59,8 @@ class PyDebugAdapterTracker implements vscode.DebugAdapterTracker {
     context: vscode.ExtensionContext;
     constructor(context: vscode.ExtensionContext) { this.context = context; }
 
-    // Handling start, stopped (paused) and continue events. Terminate events are handled per pid in onDidTerminateDebugSession.
+    // Handling start, stopped (paused) and continue events. Terminate events are handled per pid in
+    // onDidTerminateDebugSession.
     onDidSendMessage(message: any): void {
         if (message.type === 'event' && message.event === 'process') {
             // New process spawned, start monitoring pid and open/reuse webview
