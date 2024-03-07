@@ -18,7 +18,7 @@ However, this extension provides an easier, graphical solution that can show dat
 
 ## Features
 
-Provides a resource monitor that is opened when debugging Python, including process memory and cpu usage. Automatically launches (or reuses existing tab) upon debugging with Python.
+Provides a resource monitor that is opened when debugging Python, including process memory, cpu usage, and file usage. Automatically launches (or reuses existing tab) upon debugging with Python.
 
 ![usage](images/usage.gif)
 
@@ -38,27 +38,5 @@ _Test program storing strings of random sizes in memory_
 ## Known Issues and Future Updates
 
 - Hopefully, this will one day work for many languages and debuggers!
-- Not fully tested on MacOS.
+- MacOS tends to allocate an extremely large amount of virtual memory, which can cause memory usage to appear inaccurate.
 - Response to mouseover of the graph.
-
-## Recent Major Updates
-
-### 0.1.0
-
-Millisecond-accuracy for CPU usage. When writing the module, tested with Linux.
-
-### 0.1.3
-
-Native addon build now includes binaries.
-
-### 0.1.4
-
-Improved flexibility of displays.
-
-### 0.2.0
-
-Added file IO data.
-
-### 0.2.1
-
-Added support for Python Multiprocessing

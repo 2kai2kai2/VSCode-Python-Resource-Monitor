@@ -52,3 +52,7 @@ All notable changes to the Python Resource Monitor extension will be documented 
 
 ## 0.2.2 - Beta
 - Actually fixed the installation bug this time. Turns out we have to package `node_modules` with the dependencies.
+
+## 0.2.3 - Beta
+- Update to `node-ps-data` [v1.4.0](https://github.com/2kai2kai2/node-ps-data/releases/tag/v1.4.0) to add support for Apple Silicon (`darwin-arm64`)
+- Add support for the new default VS Code Python debugger type `debugpy`

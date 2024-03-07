@@ -61,20 +61,18 @@ class PyDebugAdapterTracker implements vscode.DebugAdapterTracker {
 
     // Handling start, stopped (paused) and continue events. Terminate events are handled per pid in
     // onDidTerminateDebugSession.
-    onDidSendMessage(message: any): void {
+    onDidSendMessage(message: vscode.DebugProtocolMessage | any): void {
         if (message.type === 'event' && message.event === 'process') {
             // New process spawned, start monitoring pid and open/reuse webview
             const pid = message.body.systemProcessId;
             launchWebview(this.context, pid);
-            startMonitor(pid);
         } else if (message.type === 'event' && message.event === 'stopped') {
             // Debugging is paused or breakpoint is reached, pause monitoring of all pids
             stopMonitoring();
         } else if (message.type === 'response' && message.command === 'continue') {
             // Started debugging again after pause, resume monitoring known pids
             for (let pid of pidMonitors.keys()) {
-                let updateInterval: NodeJS.Timer = setInterval(getData, pollingInterval, pid);
-                pidMonitors.set(pid, updateInterval);
+                startMonitor(pid);
             }
         }
     }
@@ -136,7 +134,7 @@ export function activate(context: vscode.ExtensionContext) {
             }
         });
         // Handle accept
-        lengthbox.onDidAccept((e) => {
+        lengthbox.onDidAccept(async (e) => {
             let num = parseInt(lengthbox.value);
             if (isNaN(num)) {
                 vscode.window.showErrorMessage('Invalid value entered for polling interval.');
@@ -145,16 +143,8 @@ export function activate(context: vscode.ExtensionContext) {
             rsmLength = Math.max(0, num); // Less than 1 is treated as unlimited.
             let rsmLengthRepr = rsmLength === 0 ? 'unlimited' : `${rsmLength}ms`;
             try {
-                panel.webview.postMessage({type: 'length', value: num})
-                    .then(
-                        () => { // On success
-                            vscode.window.showInformationMessage(
-                                `Successfully set resource monitor length to ${rsmLengthRepr}.`);
-                        },
-                        () => { // On failure
-                            vscode.window.showErrorMessage(
-                                'Failed to change running resource monitor length. Has it been closed? Change will take effect on next start.');
-                        });
+                await panel.webview.postMessage({type: 'length', value: num});
+                vscode.window.showInformationMessage(`Successfully set resource monitor length to ${rsmLengthRepr}.`);
             } catch {
                 // There is no webview panel
                 vscode.window.showInformationMessage(`Set resource monitor length to ${
@@ -165,9 +155,10 @@ export function activate(context: vscode.ExtensionContext) {
         lengthbox.show();
     }));
 
-    // Instead of just getting the debug start event, we now use an adapter tracker. This also makes sure that we only
-    // get python debugs
+    // Instead of just getting the debug start event, we now use an adapter tracker. 
+    // This also makes sure that we only get python debugs
     vscode.debug.registerDebugAdapterTrackerFactory('python', new PyDebugAdapterTrackerFactory(context));
+    vscode.debug.registerDebugAdapterTrackerFactory('debugpy', new PyDebugAdapterTrackerFactory(context));
 
     // Listen for termination events per process.
     vscode.debug.onDidTerminateDebugSession((session: vscode.DebugSession) => {
@@ -195,11 +186,11 @@ export function activate(context: vscode.ExtensionContext) {
  * @param time Timestamp for the data value.
  * @param value Value of data.
  */
-function postData(pid: number, key: 'memdata'|'cpudata'|'readdata'|'writedata', time: number, value: number) {
+async function postData(pid: number, key: 'memdata'|'cpudata'|'readdata'|'writedata', time: number, value: number) {
     try {
         // Make sure to catch promise rejections (when the webview has been closed but a message is still posted) with
         // .then()
-        panel.webview.postMessage({pid: pid, type: key, time: time, value: value}).then(nop, nop);
+        await panel.webview.postMessage({pid: pid, type: key, time: time, value: value}).then(nop, nop);
     } catch {
         console.error('Webview post failed. May be due to process interval not yet being closed.');
     }
@@ -230,7 +221,6 @@ function getData(pid: number) {
  * @param pid Process ID to monitor.
  */
 function startMonitor(pid: number) {
-    console.log(`Starting resource monitor for process ID ${pid}.`);
     let updateInterval: NodeJS.Timer = setInterval(getData, pollingInterval, pid);
     pidMonitors.set(pid, updateInterval);
 }
