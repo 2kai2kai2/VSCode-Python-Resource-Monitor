@@ -129,17 +129,17 @@ function cpuUnits(cputime) { return Math.ceil(cputime * 100) / 100 + '%'; }
  * @param {number} max
  * @returns {Axis}
  */
-function timeAxis(min, max) { return {min: min, max: max, ticks: 10, unitFunc: timeUnits}; }
+function timeAxis(min, max) { return { min: min, max: max, ticks: 10, unitFunc: timeUnits }; }
 /**
  * @param {number} max
  * @returns {Axis}
  */
-function cpuAxis(max) { return {min: 0, max: max, ticks: 5, unitFunc: cpuUnits}; }
+function cpuAxis(max) { return { min: 0, max: max, ticks: 5, unitFunc: cpuUnits }; }
 /**
  * @param {number} max
  * @returns {Axis}
  */
-function memAxis(max) { return {min: 0, max: max, ticks: 4, unitFunc: memUnits}; }
+function memAxis(max) { return { min: 0, max: max, ticks: 4, unitFunc: memUnits }; }
 
 /**
  * Updates a graph on a specified canvas.
@@ -421,61 +421,61 @@ window.addEventListener('message', (e) => {
     const pidMonitor = getPidMonitor(data.pid);
 
     switch (data.type) {
-    case 'memdata':
-        pidMonitor.memory.set(data.time, data.value);
-        updateMem();
-        break;
-    case 'cpudata':
-        if (pidMonitor.lastcpu >= 0) {
-            /** In ms, the total amount of time since the last measurement */
-            let deltaT = data.time - pidMonitor.lastcputime;
-            /** In ms, the amount of CPU time used since the last measurement */
-            let deltaC = data.value - pidMonitor.lastcpu;
-            pidMonitor.cpu.set(data.time, (100.0 * deltaC) / deltaT);
-        }
-        pidMonitor.lastcputime = data.time;
-        pidMonitor.lastcpu = data.value;
-        updateCpu();
-        break;
-    case 'readdata':
-        if (pidMonitor.lastfileread >= 0) {
-            /**
-             * In bytes, the amount of file read performed since the last
-             * measurement
-             */
-            let deltaR = data.value - pidMonitor.lastfileread;
-            pidMonitor.fileread.set(data.time, deltaR);
-        }
-        pidMonitor.lastfileread = data.value;
-        updateFileRead();
-        break;
-    case 'writedata':
-        if (pidMonitor.lastfilewrite >= 0) {
-            // In bytes, the amount of file write performed since the last
-            // measurement
-            let deltaW = data.value - pidMonitor.lastfilewrite;
-            pidMonitor.filewrite.set(data.time, deltaW);
-        }
-        pidMonitor.lastfilewrite = data.value;
-        updateFileWrite();
-        break;
-    case 'length':
-        length = data.value;
-        updateMem();
-        updateCpu();
-        updateFileRead();
-        updateFileWrite();
-        break;
-    case 'reset':
-        pids.clear();
-        updateMem();
-        updateCpu();
-        updateFileRead();
-        updateFileWrite();
-        break;
-    default:
-        // Discard
-        console.error('Invalid message type for JSON message to WebView:\n' + data);
+        case 'memdata':
+            pidMonitor.memory.set(data.time, data.value);
+            updateMem();
+            break;
+        case 'cpudata':
+            if (pidMonitor.lastcpu >= 0) {
+                /** In ms, the total amount of time since the last measurement */
+                let deltaT = data.time - pidMonitor.lastcputime;
+                /** In ms, the amount of CPU time used since the last measurement */
+                let deltaC = data.value - pidMonitor.lastcpu;
+                pidMonitor.cpu.set(data.time, (100.0 * deltaC) / deltaT);
+            }
+            pidMonitor.lastcputime = data.time;
+            pidMonitor.lastcpu = data.value;
+            updateCpu();
+            break;
+        case 'readdata':
+            if (pidMonitor.lastfileread >= 0) {
+                /**
+                 * In bytes, the amount of file read performed since the last
+                 * measurement
+                 */
+                let deltaR = data.value - pidMonitor.lastfileread;
+                pidMonitor.fileread.set(data.time, deltaR);
+            }
+            pidMonitor.lastfileread = data.value;
+            updateFileRead();
+            break;
+        case 'writedata':
+            if (pidMonitor.lastfilewrite >= 0) {
+                // In bytes, the amount of file write performed since the last
+                // measurement
+                let deltaW = data.value - pidMonitor.lastfilewrite;
+                pidMonitor.filewrite.set(data.time, deltaW);
+            }
+            pidMonitor.lastfilewrite = data.value;
+            updateFileWrite();
+            break;
+        case 'length':
+            length = data.value;
+            updateMem();
+            updateCpu();
+            updateFileRead();
+            updateFileWrite();
+            break;
+        case 'reset':
+            pids.clear();
+            updateMem();
+            updateCpu();
+            updateFileRead();
+            updateFileWrite();
+            break;
+        default:
+            // Discard
+            console.error('Invalid message type for JSON message to WebView:\n' + data);
     }
 });
 

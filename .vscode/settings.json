@@ -10,6 +10,5 @@
     },
     // Turn off tsc task auto detection since we have the necessary tasks as npm scripts
     "typescript.tsc.autoDetect": "off",
-    "clang-format.language.javascript.style": "file",
-    "clang-format.language.typescript.style": "file"
+    "typescript.format.enable": false
 }

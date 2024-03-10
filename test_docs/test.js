@@ -4,7 +4,7 @@ const readline = require('readline').createInterface({
 });
 var data = "";
 readline.on("line", (str) => {
-    let length = Math.ceil(Math.random() * 10**7);
+    let length = Math.ceil(Math.random() * 10 ** 7);
     data = "a".repeat(length);
     console.log(length);
 });
