@@ -3,7 +3,7 @@ import * as ps from "node-ps-data";
 import { join } from "path";
 import * as vscode from "vscode";
 
-var webview: vscode.Webview;
+var webview: vscode.Webview | undefined = undefined;
 var pollingInterval = 100;
 var rsmLength = 10000;
 
@@ -68,7 +68,7 @@ class PyDebugAdapterTracker implements vscode.DebugAdapterTracker {
             // https://microsoft.github.io/debug-adapter-protocol//specification.html#Events_Process
             // New process spawned, start monitoring pid and open/reuse webview
             if (pidMonitors.size === 0) {
-                webview.postMessage({ type: "reset" });
+                webview?.postMessage({ type: "reset" });
             }
             const pid = message.body.systemProcessId;
             startMonitor(pid);
@@ -185,7 +185,7 @@ export function activate(context: vscode.ExtensionContext) {
                     let rsmLengthRepr =
                         rsmLength === 0 ? "unlimited" : `${rsmLength}ms`;
                     try {
-                        await webview.postMessage({
+                        await webview?.postMessage({
                             type: "length",
                             value: num,
                         });
@@ -250,9 +250,7 @@ async function postData(
     try {
         // Make sure to catch promise rejections (when the webview has been closed but a message is still posted) with
         // .then()
-        await webview
-            .postMessage({ pid: pid, type: key, time: time, value: value })
-            .then(nop, nop);
+        await webview?.postMessage({ pid, type: key, time, value });
     } catch {
         console.error(
             "Webview post failed. May be due to process interval not yet being closed."

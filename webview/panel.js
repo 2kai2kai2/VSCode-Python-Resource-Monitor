@@ -313,7 +313,7 @@ function updateCpu() {
 }
 
 function updateFileRead() {
-    let maxFile = 0;
+    let maxFile = 8;
     let minTime = Number.MAX_SAFE_INTEGER;
     let maxTime = 0;
     let findmax = (value, key) => {
@@ -341,7 +341,7 @@ function updateFileRead() {
 }
 
 function updateFileWrite() {
-    let maxFile = 0;
+    let maxFile = 8;
     let minTime = Number.MAX_SAFE_INTEGER;
     let maxTime = 0;
     let findmax = (value, key) => {
@@ -365,7 +365,7 @@ function updateFileWrite() {
             pidMonitor.filewrite.forEach(prune);
         }
     });
-    updateGraph(fileWriteCanvas, minTime, maxTime, 10, timeUnits, 0, maxFile, 5, memUnits, 'filewrite');
+    updateGraph(fileWriteCanvas, timeAxis(minTime, maxTime), memAxis(maxFile), 'filewrite');
 }
 
 class Message {
