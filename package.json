@@ -42,12 +42,20 @@
         "color": "#252526"
     },
     "activationEvents": [
-        "onDebug",
-        "onCommand:python-resource-monitor.rsmInterval",
-        "onCommand:python-resource-monitor.rsmLength"
+        "onDebug"
     ],
     "main": "./out/extension.js",
     "contributes": {
+        "views": {
+            "debug": [
+                {
+                    "id": "python-resource-monitor",
+                    "name": "Python Resource Monitor",
+                    "when": "debugType == 'debugpy' || debugType == 'python'",
+                    "type": "webview"
+                }
+            ]
+        },
         "commands": [
             {
                 "command": "python-resource-monitor.rsmInterval",

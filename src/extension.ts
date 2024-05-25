@@ -3,63 +3,56 @@ import * as ps from "node-ps-data";
 import { join } from "path";
 import * as vscode from "vscode";
 
-var panel: vscode.WebviewPanel;
+var webview: vscode.Webview;
 var pollingInterval = 100;
 var rsmLength = 10000;
 
 var pidMonitors = new Map();
-var shouldResetPanel = false;
 
 function nop() {}
 
-/**
- * Creates and starts a new Webview resource monitor.
- * @param context The VS Code Extension Context from which to launch the Webview.
- * @param pid The process ID to track with the resource monitor.
- */
-async function launchWebview(context: vscode.ExtensionContext, pid: number) {
-    // We want to reuse the panel for new processes in an existing debug session.
-    if (panel) {
-        if (!shouldResetPanel) {
-            return;
-        }
-
-        // Recreate the panel when starting a new debug session.
-        shouldResetPanel = false;
-        try {
-            panel.dispose();
-        } catch {}
+class PyRSMWebviewProvider implements vscode.WebviewViewProvider {
+    context: vscode.ExtensionContext;
+    constructor(context: vscode.ExtensionContext) {
+        this.context = context;
     }
-    // Create the webview
-    panel = vscode.window.createWebviewPanel(
-        "resourceMonitor",
-        "Resource Monitor",
-        vscode.ViewColumn.Beside,
-        { enableScripts: true }
-    );
 
-    // When removing the panel, stop all monitoring
-    panel.onDidDispose(() => {
-        stopMonitoring();
-        pidMonitors.clear();
-    });
+    resolveWebviewView(
+        webviewView: vscode.WebviewView,
+        context: vscode.WebviewViewResolveContext<unknown>,
+        token: vscode.CancellationToken
+    ): void | Thenable<void> {
+        webviewView.webview.options = {
+            enableScripts: true,
+        };
 
-    // Set page
-    let paneljs = panel.webview.asWebviewUri(
-        vscode.Uri.file(join(context.extensionPath, "webview", "panel.js"))
-    );
+        webviewView.onDidDispose(() => {
+            stopMonitoring();
+            pidMonitors.clear();
+        });
 
-    var htmlText = fs
-        .readFileSync(join(context.extensionPath, "webview", "panel.html"))
-        .toString();
-    htmlText = htmlText.replace("${paneljs}", paneljs.toString());
-    panel.webview.html = htmlText;
+        // Set page
+        let paneljs = webviewView.webview.asWebviewUri(
+            vscode.Uri.file(
+                join(this.context.extensionPath, "webview", "panel.js")
+            )
+        );
 
-    panel.webview.postMessage({ type: "length", value: rsmLength });
+        var htmlText = fs
+            .readFileSync(
+                join(this.context.extensionPath, "webview", "panel.html")
+            )
+            .toString();
+        htmlText = htmlText.replace("${paneljs}", paneljs.toString());
+        webviewView.webview.html = htmlText;
 
-    // Start updates
-    startMonitor(pid);
-    console.log(`Starting resource monitor for process ID ${pid}.`);
+        webviewView.webview.postMessage({ type: "length", value: rsmLength });
+
+        webview = webviewView.webview;
+        // Start updates
+        //startMonitor(pid);
+        //console.log(`Starting resource monitor for process ID ${pid}.`);
+    }
 }
 
 class PyDebugAdapterTracker implements vscode.DebugAdapterTracker {
@@ -72,9 +65,13 @@ class PyDebugAdapterTracker implements vscode.DebugAdapterTracker {
     // onDidTerminateDebugSession.
     onDidSendMessage(message: vscode.DebugProtocolMessage | any): void {
         if (message.type === "event" && message.event === "process") {
+            // https://microsoft.github.io/debug-adapter-protocol//specification.html#Events_Process
             // New process spawned, start monitoring pid and open/reuse webview
+            if (pidMonitors.size === 0) {
+                webview.postMessage({ type: "reset" });
+            }
             const pid = message.body.systemProcessId;
-            launchWebview(this.context, pid);
+            startMonitor(pid);
         } else if (message.type === "event" && message.event === "stopped") {
             // Debugging is paused or breakpoint is reached, pause monitoring of all pids
             stopMonitoring();
@@ -106,6 +103,14 @@ class PyDebugAdapterTrackerFactory
 
 export function activate(context: vscode.ExtensionContext) {
     console.log("Extension Python Resource Monitor activated.");
+    context.subscriptions.push(
+        vscode.window.registerWebviewViewProvider(
+            "python-resource-monitor",
+            new PyRSMWebviewProvider(context),
+            { webviewOptions: { retainContextWhenHidden: true } }
+        )
+    );
+
     // Commands
     // Polling interval change
     context.subscriptions.push(
@@ -180,7 +185,7 @@ export function activate(context: vscode.ExtensionContext) {
                     let rsmLengthRepr =
                         rsmLength === 0 ? "unlimited" : `${rsmLength}ms`;
                     try {
-                        await panel.webview.postMessage({
+                        await webview.postMessage({
                             type: "length",
                             value: num,
                         });
@@ -225,7 +230,6 @@ export function activate(context: vscode.ExtensionContext) {
             console.log("Parent process stopped!");
             stopMonitoring();
             pidMonitors.clear();
-            shouldResetPanel = true;
         }
     });
 }
@@ -246,7 +250,7 @@ async function postData(
     try {
         // Make sure to catch promise rejections (when the webview has been closed but a message is still posted) with
         // .then()
-        await panel.webview
+        await webview
             .postMessage({ pid: pid, type: key, time: time, value: value })
             .then(nop, nop);
     } catch {
@@ -295,12 +299,4 @@ function startMonitor(pid: number) {
 function stopMonitoring() {
     console.log("Stopped monitoring pids", [...pidMonitors.keys()]);
     pidMonitors.forEach((updateInterval) => clearInterval(updateInterval));
-}
-
-export function deactivate() {
-    try {
-        panel.dispose();
-    } catch {
-        // pass
-    }
 }
