@@ -13,6 +13,15 @@
             },
             "group": {
                 "kind": "build",
+                "isDefault": false
+            }
+        },
+        {
+            "type": "npm",
+            "script": "compile",
+            "problemMatcher": ["$ts-webpack-watch", "$tslint-webpack-watch"],
+            "group": {
+                "kind": "build",
                 "isDefault": true
             }
         },

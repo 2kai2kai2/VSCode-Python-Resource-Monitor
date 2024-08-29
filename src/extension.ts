@@ -7,7 +7,7 @@ var webview: vscode.Webview | undefined = undefined;
 var pollingInterval = 100;
 var rsmLength = 10000;
 
-var pidMonitors = new Map();
+var pidMonitors = new Map<number, NodeJS.Timeout>();
 
 function nop() {}
 
@@ -105,7 +105,7 @@ export function activate(context: vscode.ExtensionContext) {
     console.log("Extension Python Resource Monitor activated.");
     context.subscriptions.push(
         vscode.window.registerWebviewViewProvider(
-            "python-resource-monitor",
+            "python-resource-monitor.graphsView",
             new PyRSMWebviewProvider(context),
             { webviewOptions: { retainContextWhenHidden: true } }
         )
@@ -207,13 +207,15 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Instead of just getting the debug start event, we now use an adapter tracker.
     // This also makes sure that we only get python debugs
-    vscode.debug.registerDebugAdapterTrackerFactory(
-        "python",
-        new PyDebugAdapterTrackerFactory(context)
-    );
-    vscode.debug.registerDebugAdapterTrackerFactory(
-        "debugpy",
-        new PyDebugAdapterTrackerFactory(context)
+    context.subscriptions.push(
+        vscode.debug.registerDebugAdapterTrackerFactory(
+            "python",
+            new PyDebugAdapterTrackerFactory(context)
+        ),
+        vscode.debug.registerDebugAdapterTrackerFactory(
+            "debugpy",
+            new PyDebugAdapterTrackerFactory(context)
+        )
     );
 
     // Listen for termination events per process.

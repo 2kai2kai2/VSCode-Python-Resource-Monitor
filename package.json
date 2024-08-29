@@ -49,7 +49,7 @@
         "views": {
             "debug": [
                 {
-                    "id": "python-resource-monitor",
+                    "id": "python-resource-monitor.graphsView",
                     "name": "Python Resource Monitor",
                     "when": "debugType == 'debugpy' || debugType == 'python'",
                     "type": "webview"
