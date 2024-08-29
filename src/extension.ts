@@ -267,7 +267,7 @@ async function postData(
 function getData(pid: number) {
     let cpu = ps.cpuTime(pid);
     let timecpu = Date.now();
-    let mem = ps.memInfo(pid);
+    let mem = ps.memRSS(pid);
     let timemem = Date.now();
     let read = ps.fileRead(pid);
     let timeread = Date.now();

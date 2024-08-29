@@ -88,6 +88,6 @@
         "vscode-test": "^1.6.1"
     },
     "dependencies": {
-        "node-ps-data": "^1.4.0"
+        "node-ps-data": "^1.4.1"
     }
 }
