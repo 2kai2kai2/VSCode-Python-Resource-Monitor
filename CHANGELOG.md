@@ -56,3 +56,7 @@ All notable changes to the Python Resource Monitor extension will be documented 
 ## 0.2.3 - Beta
 - Update to `node-ps-data` [v1.4.0](https://github.com/2kai2kai2/node-ps-data/releases/tag/v1.4.0) to add support for Apple Silicon (`darwin-arm64`)
 - Add support for the new default VS Code Python debugger type `debugpy`
+
+## 0.3.0
+- Update to `node-ps-data` [v1.4.1](https://github.com/2kai2kai2/node-ps-data/releases/tag/v1.4.1) and use memory resident/working set size instead of full memory (since MacOS memory reports the full address space which is not useful)
+- Moved graphs to the debug sideview instead of opening a new page when debug starts.
